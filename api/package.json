@@ -1,0 +1,27 @@
+﻿{
+    "name":  "rostelecom-field-dispatch-api",
+    "version":  "0.1.0",
+    "private":  true,
+    "description":  "Р‘РёР·РЅРµСЃ-Р»РѕРіРёРєР° РґРёСЃРїРµС‚С‡РµСЂР° РѕР±СЂР°С‰РµРЅРёР№",
+    "type":  "module",
+    "engines":  {
+                    "node":  "\u003e=22"
+                },
+    "scripts":  {
+                    "build":  "tsc -p tsconfig.json",
+                    "start":  "node dist/index.js",
+                    "dev":  "npm run build \u0026\u0026 node --env-file=../.env dist/index.js",
+                    "typecheck":  "tsc -p tsconfig.json --noEmit"
+                },
+    "dependencies":  {
+                         "@fastify/type-provider-typebox":  "^5.0.0",
+                         "@sinclair/typebox":  "^0.33.17",
+                         "fastify":  "^5.1.0",
+                         "pg":  "^8.13.1"
+                     },
+    "devDependencies":  {
+                            "@types/node":  "^22.7.5",
+                            "@types/pg":  "^8.11.10",
+                            "typescript":  "^5.6.3"
+                        }
+}
