@@ -1,4 +1,4 @@
-﻿CREATE TABLE dispatch_snapshots (
+CREATE TABLE dispatch_snapshots (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   plan_date date NOT NULL,
   version integer NOT NULL CHECK (version > 0),
