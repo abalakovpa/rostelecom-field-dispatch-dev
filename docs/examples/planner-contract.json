@@ -1,0 +1,65 @@
+{
+  "status": "temporary_internal_example",
+  "request": {
+    "plan_date": "2026-11-13",
+    "as_of": "2026-11-13T09:00:00+05:00",
+    "workers": [
+      {"id": "W-I", "center_id": "SC-01", "profiles": ["installation"], "technologies": ["FTTB", "PON"], "height_permit": false, "shift": {"start_at": "2026-11-13T09:00:00+05:00", "end_at": "2026-11-13T18:00:00+05:00"}, "lunch": {"start_at": "2026-11-13T13:00:00+05:00", "end_at": "2026-11-13T14:00:00+05:00"}, "stock": {"ont": 1, "router": 1}},
+      {"id": "W-R", "center_id": "SC-01", "profiles": ["repair"], "technologies": ["PON"], "height_permit": false, "shift": {"start_at": "2026-11-13T09:00:00+05:00", "end_at": "2026-11-13T18:00:00+05:00"}, "lunch": {"start_at": "2026-11-13T13:00:00+05:00", "end_at": "2026-11-13T14:00:00+05:00"}, "stock": {}}
+    ],
+    "centers": [
+      {"id": "SC-01", "location_id": "C", "open_intervals": [{"start_at": "2026-11-13T09:00:00+05:00", "end_at": "2026-11-13T18:00:00+05:00"}], "equipment_available": {"ont": 10, "router": 10}, "replenishment_minutes": 15}
+    ],
+    "orders": [
+      {"id": "I-01", "location_id": "A", "work_type_id": "install_pon", "technology": "PON", "registered_at": "2026-11-12T10:00:00+05:00", "slot": {"start_at": "2026-11-13T09:00:00+05:00", "end_at": "2026-11-13T11:00:00+05:00"}, "due_at": "2026-11-17T18:00:00+05:00", "is_repeat": false, "requires_height": false, "equipment": {"ont": 1}},
+      {"id": "I-02", "location_id": "B", "work_type_id": "install_fttb", "technology": "FTTB", "registered_at": "2026-11-12T10:00:00+05:00", "slot": {"start_at": "2026-11-13T11:00:00+05:00", "end_at": "2026-11-13T13:00:00+05:00"}, "due_at": "2026-11-17T18:00:00+05:00", "is_repeat": false, "requires_height": false, "equipment": {"router": 1}},
+      {"id": "I-03", "location_id": "D", "work_type_id": "install_overhead", "technology": "PON", "registered_at": "2026-11-12T10:00:00+05:00", "slot": {"start_at": "2026-11-13T14:00:00+05:00", "end_at": "2026-11-13T16:00:00+05:00"}, "due_at": "2026-11-19T18:00:00+05:00", "is_repeat": false, "requires_height": true, "equipment": {"ont": 1}},
+      {"id": "R-01", "location_id": "E", "work_type_id": "subscriber_fault", "technology": "PON", "registered_at": "2026-11-12T22:45:00+05:00", "slot": {"start_at": "2026-11-13T10:00:00+05:00", "end_at": "2026-11-13T12:00:00+05:00"}, "due_at": "2026-11-13T10:45:00+05:00", "is_repeat": true, "requires_height": false, "equipment": {}},
+      {"id": "R-02", "location_id": "F", "work_type_id": "subscriber_fault", "technology": "PON", "registered_at": "2026-11-13T08:00:00+05:00", "slot": {"start_at": "2026-11-13T14:00:00+05:00", "end_at": "2026-11-13T16:00:00+05:00"}, "due_at": "2026-11-14T08:00:00+05:00", "is_repeat": false, "requires_height": false, "equipment": {}}
+    ],
+    "work_types": [
+      {"id": "install_pon", "profiles": ["installation"], "duration_minutes": 90, "arrival_grace_minutes": 10},
+      {"id": "install_fttb", "profiles": ["installation"], "duration_minutes": 60, "arrival_grace_minutes": 10},
+      {"id": "install_overhead", "profiles": ["installation"], "duration_minutes": 180, "arrival_grace_minutes": 10},
+      {"id": "subscriber_fault", "profiles": ["repair"], "duration_minutes": 60, "arrival_grace_minutes": null}
+    ],
+    "travel_minutes": {
+      "location_ids": ["C", "A", "B", "D", "E", "F"],
+      "values": [
+        [0, 10, 15, 20, 10, 15],
+        [10, 0, 20, 15, 10, 20],
+        [15, 20, 0, 15, 20, 10],
+        [20, 15, 15, 0, 15, 20],
+        [10, 10, 20, 15, 0, 15],
+        [15, 20, 10, 20, 15, 0]
+      ]
+    },
+    "current_state": null
+  },
+  "response": {
+    "routes": [
+      {
+        "worker_id": "W-I",
+        "steps": [
+          {"type": "start", "location_id": "C", "start_at": "2026-11-13T09:00:00+05:00", "end_at": "2026-11-13T09:00:00+05:00", "travel_minutes": 0, "status": "planned"},
+          {"type": "visit", "location_id": "A", "start_at": "2026-11-13T09:10:00+05:00", "end_at": "2026-11-13T10:40:00+05:00", "travel_minutes": 10, "status": "planned", "order_id": "I-01", "arrival_at": "2026-11-13T09:10:00+05:00", "deadline_met": true},
+          {"type": "visit", "location_id": "B", "start_at": "2026-11-13T11:00:00+05:00", "end_at": "2026-11-13T12:00:00+05:00", "travel_minutes": 20, "status": "planned", "order_id": "I-02", "arrival_at": "2026-11-13T11:00:00+05:00", "deadline_met": true},
+          {"type": "lunch", "location_id": "B", "start_at": "2026-11-13T13:00:00+05:00", "end_at": "2026-11-13T14:00:00+05:00", "travel_minutes": 0, "status": "planned"},
+          {"type": "return", "location_id": "C", "start_at": "2026-11-13T14:15:00+05:00", "end_at": "2026-11-13T14:15:00+05:00", "travel_minutes": 15, "status": "planned"}
+        ]
+      },
+      {
+        "worker_id": "W-R",
+        "steps": [
+          {"type": "start", "location_id": "C", "start_at": "2026-11-13T09:00:00+05:00", "end_at": "2026-11-13T09:00:00+05:00", "travel_minutes": 0, "status": "planned"},
+          {"type": "visit", "location_id": "E", "start_at": "2026-11-13T10:00:00+05:00", "end_at": "2026-11-13T11:00:00+05:00", "travel_minutes": 10, "status": "planned", "order_id": "R-01", "arrival_at": "2026-11-13T10:00:00+05:00", "deadline_met": false},
+          {"type": "lunch", "location_id": "F", "start_at": "2026-11-13T13:00:00+05:00", "end_at": "2026-11-13T14:00:00+05:00", "travel_minutes": 15, "status": "planned"},
+          {"type": "visit", "location_id": "F", "start_at": "2026-11-13T14:00:00+05:00", "end_at": "2026-11-13T15:00:00+05:00", "travel_minutes": 0, "status": "planned", "order_id": "R-02", "arrival_at": "2026-11-13T14:00:00+05:00", "deadline_met": true},
+          {"type": "return", "location_id": "C", "start_at": "2026-11-13T15:15:00+05:00", "end_at": "2026-11-13T15:15:00+05:00", "travel_minutes": 15, "status": "planned"}
+        ]
+      }
+    ],
+    "unassigned": [{"order_id": "I-03", "reason_code": "NO_QUALIFIED_WORKER"}],
+    "risks": []
+  }
+}
