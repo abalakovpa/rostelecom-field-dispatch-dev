@@ -27,3 +27,5 @@
 
 
 Локальная инфраструктура и Bash-развёртывание: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Сейчас реализованы PostgreSQL, миграции и API /health; планировщик и предметные REST-маршруты ещё в разработке.
+
+Официальный контракт организаторов: [api_spec.yaml](api_spec.yaml). [План перехода Fastify API](docs/API_IMPLEMENTATION.md) описывает отличия от внутреннего черновика и оставшиеся работы.
