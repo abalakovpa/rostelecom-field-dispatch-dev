@@ -5,8 +5,8 @@ cd "$ROOT"
 if [[ "${1:-}" == '--install-docker' ]]; then
   [[ $EUID -eq 0 ]] || { echo 'Use sudo for --install-docker' >&2; exit 1; }
   . /etc/os-release
-  [[ "$ID" == ubuntu && "$VERSION_ID" == 24.04 ]] || {
-    echo 'Automatic installation supports Ubuntu 24.04 only.' >&2; exit 1;
+  [[ "$ID" == ubuntu && ( "$VERSION_ID" == 24.04 || "$VERSION_ID" == 26.04 ) ]] || {
+    echo 'Automatic installation supports Ubuntu 24.04 and 26.04 only.' >&2; exit 1;
   }
   apt-get update
   apt-get install -y docker.io docker-compose-v2
@@ -16,7 +16,7 @@ elif [[ $# -gt 0 ]]; then
   exit 1
 fi
 command -v docker >/dev/null || {
-  echo 'Install Docker Engine and Compose v2, or use --install-docker on Ubuntu 24.04.' >&2
+  echo 'Install Docker Engine and Compose v2, or use --install-docker on Ubuntu 24.04 or 26.04.' >&2
   exit 1
 }
 docker compose version >/dev/null
