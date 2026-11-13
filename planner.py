@@ -39,8 +39,12 @@ def _weight(order):
 
 
 def _qualified(worker, order, work_type):
+    return _has_required_skills(worker, order, work_type["profiles"])
+
+
+def _has_required_skills(worker, order, profiles):
     return (
-        bool(set(worker["profiles"]).intersection(work_type["profiles"]))
+        bool(set(worker["profiles"]).intersection(profiles))
         and order["technology"] in worker["technologies"]
         and (not order["requires_height"] or worker["height_permit"])
     )

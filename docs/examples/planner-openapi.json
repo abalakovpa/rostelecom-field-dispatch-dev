@@ -1,0 +1,403 @@
+{
+  "reference": {
+    "service_centers": [
+      {
+        "service_center_id": "SC-01",
+        "name": "Север",
+        "address": "СЦ",
+        "lat": 56.9,
+        "lon": 60.6,
+        "opening_hours": {
+          "open": "08:00",
+          "close": "18:00"
+        },
+        "restock_duration_min": 15
+      }
+    ],
+    "staff": [
+      {
+        "staff_id": "ST-001",
+        "service_center_id": "SC-01",
+        "profiles": [
+          "INSTALL"
+        ],
+        "technologies": [
+          "PON"
+        ],
+        "height_permit": false,
+        "equipment_start": {
+          "ONT": 0,
+          "ROUTER": 1,
+          "STB": 0
+        },
+        "equipment_capacity": {
+          "ONT": 0,
+          "ROUTER": 3,
+          "STB": 0
+        },
+        "shift": {
+          "start": "09:00",
+          "end": "18:00",
+          "break_duration_min": 60,
+          "break_window": {
+            "from": "12:00",
+            "to": "15:00"
+          }
+        }
+      }
+    ],
+    "access_nodes": [
+      {
+        "access_node_id": "AN-0001",
+        "node_type": "OLT",
+        "technology": "PON",
+        "name": "Узел",
+        "address": "Узел",
+        "lat": 56.9,
+        "lon": 60.6,
+        "buildings": [
+          {
+            "building_id": "B-00001",
+            "address": "B-00001",
+            "lat": 56.9,
+            "lon": 60.6,
+            "building_type": "MKD",
+            "overhead_line": false
+          },
+          {
+            "building_id": "B-00002",
+            "address": "B-00002",
+            "lat": 56.9,
+            "lon": 60.6,
+            "building_type": "MKD",
+            "overhead_line": false
+          }
+        ]
+      }
+    ],
+    "work_types": [
+      {
+        "code": "INST_PON_MKD",
+        "name": "Установка",
+        "profiles": [
+          "INSTALL"
+        ],
+        "duration_min": 45,
+        "max_start_delay_min": 10,
+        "deadline_kind": "WORKING_DAYS",
+        "deadline_value": 3,
+        "repeat_deadline_value": null,
+        "pgp_relevant": false
+      }
+    ]
+  },
+  "matrix": {
+    "matrix_id": "test-v1",
+    "points": [
+      "SC-01",
+      "B-00001",
+      "B-00002"
+    ],
+    "durations_sec": [
+      [
+        0,
+        601,
+        480
+      ],
+      [
+        501,
+        0,
+        600
+      ],
+      [
+        540,
+        720,
+        0
+      ]
+    ],
+    "distances_m": [
+      [
+        0,
+        2100,
+        1800
+      ],
+      [
+        1900,
+        0,
+        2000
+      ],
+      [
+        1850,
+        1900,
+        0
+      ]
+    ]
+  },
+  "day": {
+    "date": "2026-10-26",
+    "now": "2026-10-26T08:30:00+05:00",
+    "orders": [
+      {
+        "order_id": "ORD-20261026-0001",
+        "work_type_code": "INST_PON_MKD",
+        "technology": "PON",
+        "access_node_id": "AN-0001",
+        "is_repeat": false,
+        "requires_height": false,
+        "registered_at": "2026-10-26T08:00:00+05:00",
+        "required_equipment": {
+          "ONT": 0,
+          "ROUTER": 1,
+          "STB": 0
+        },
+        "slot": {
+          "start": "2026-10-26T09:10:00+05:00",
+          "end": "2026-10-26T11:10:00+05:00"
+        },
+        "latest_start": "2026-10-26T09:20:00+05:00",
+        "deadline": "2026-10-26T17:00:00+05:00",
+        "building_id": "B-00001",
+        "address": "B-00001",
+        "lat": 56.9,
+        "lon": 60.6,
+        "building_type": "MKD"
+      },
+      {
+        "order_id": "ORD-20261026-0002",
+        "work_type_code": "INST_PON_MKD",
+        "technology": "PON",
+        "access_node_id": "AN-0001",
+        "is_repeat": false,
+        "requires_height": false,
+        "registered_at": "2026-10-26T08:00:00+05:00",
+        "required_equipment": {
+          "ONT": 0,
+          "ROUTER": 1,
+          "STB": 0
+        },
+        "slot": {
+          "start": "2026-10-26T11:10:00+05:00",
+          "end": "2026-10-26T13:10:00+05:00"
+        },
+        "latest_start": "2026-10-26T11:20:00+05:00",
+        "deadline": "2026-10-26T17:00:00+05:00",
+        "building_id": "B-00002",
+        "address": "B-00002",
+        "lat": 56.9,
+        "lon": 60.6,
+        "building_type": "MKD"
+      },
+      {
+        "order_id": "ORD-20261026-0003",
+        "work_type_code": "INST_PON_MKD",
+        "technology": "PON",
+        "access_node_id": "AN-0001",
+        "is_repeat": false,
+        "requires_height": true,
+        "registered_at": "2026-10-26T08:00:00+05:00",
+        "required_equipment": {
+          "ONT": 0,
+          "ROUTER": 1,
+          "STB": 0
+        },
+        "slot": {
+          "start": "2026-10-26T14:10:00+05:00",
+          "end": "2026-10-26T16:10:00+05:00"
+        },
+        "latest_start": "2026-10-26T14:20:00+05:00",
+        "deadline": "2026-10-26T17:00:00+05:00",
+        "building_id": "B-00002",
+        "address": "B-00002",
+        "lat": 56.9,
+        "lon": 60.6,
+        "building_type": "MKD"
+      }
+    ]
+  },
+  "initial_plan": {
+    "date": "2026-10-26",
+    "plan_version": 1,
+    "as_of": "2026-10-26T08:30:00+05:00",
+    "based_on_event_id": null,
+    "routes": [
+      {
+        "staff_id": "ST-001",
+        "service_center_id": "SC-01",
+        "status": "ACTIVE",
+        "unavailable_from": null,
+        "unavailable_until": null,
+        "stops": [
+          {
+            "seq": 1,
+            "type": "DEPOT_START",
+            "location_id": "SC-01",
+            "order_id": null,
+            "arrival": "2026-10-26T09:00:00+05:00",
+            "start": "2026-10-26T09:00:00+05:00",
+            "end": "2026-10-26T09:00:00+05:00",
+            "status": "PLANNED"
+          },
+          {
+            "seq": 2,
+            "type": "VISIT",
+            "location_id": "B-00001",
+            "order_id": "ORD-20261026-0001",
+            "arrival": "2026-10-26T09:10:01+05:00",
+            "start": "2026-10-26T09:10:01+05:00",
+            "end": "2026-10-26T09:55:01+05:00",
+            "status": "PLANNED"
+          },
+          {
+            "seq": 3,
+            "type": "RESTOCK",
+            "location_id": "SC-01",
+            "order_id": null,
+            "arrival": "2026-10-26T10:03:22+05:00",
+            "start": "2026-10-26T10:03:22+05:00",
+            "end": "2026-10-26T10:18:22+05:00",
+            "status": "PLANNED"
+          },
+          {
+            "seq": 4,
+            "type": "VISIT",
+            "location_id": "B-00002",
+            "order_id": "ORD-20261026-0002",
+            "arrival": "2026-10-26T10:26:22+05:00",
+            "start": "2026-10-26T11:10:00+05:00",
+            "end": "2026-10-26T11:55:00+05:00",
+            "status": "PLANNED"
+          },
+          {
+            "seq": 5,
+            "type": "BREAK",
+            "location_id": "B-00002",
+            "order_id": null,
+            "arrival": "2026-10-26T11:55:00+05:00",
+            "start": "2026-10-26T12:00:00+05:00",
+            "end": "2026-10-26T13:00:00+05:00",
+            "status": "PLANNED"
+          },
+          {
+            "seq": 6,
+            "type": "DEPOT_END",
+            "location_id": "SC-01",
+            "order_id": null,
+            "arrival": "2026-10-26T13:09:00+05:00",
+            "start": "2026-10-26T13:09:00+05:00",
+            "end": "2026-10-26T13:09:00+05:00",
+            "status": "PLANNED"
+          }
+        ]
+      }
+    ],
+    "unassigned": [
+      {
+        "order_id": "ORD-20261026-0003",
+        "reason_code": "NO_QUALIFIED_STAFF",
+        "reason_text": "Нет сотрудника с подходящим профилем, технологией и допуском",
+        "suggested_action": "ESCALATE"
+      }
+    ],
+    "pgp_groups": [],
+    "cancelled": [],
+    "alerts": []
+  },
+  "event": {
+    "type": "VISIT_DELAYED",
+    "event_id": "EV-20261026-0001",
+    "timestamp": "2026-10-26T09:35:00+05:00",
+    "staff_id": "ST-001",
+    "order_id": "ORD-20261026-0001",
+    "expected_end": "2026-10-26T11:10:00+05:00"
+  },
+  "updated_plan": {
+    "date": "2026-10-26",
+    "plan_version": 2,
+    "as_of": "2026-10-26T09:35:00+05:00",
+    "based_on_event_id": "EV-20261026-0001",
+    "routes": [
+      {
+        "staff_id": "ST-001",
+        "service_center_id": "SC-01",
+        "status": "ACTIVE",
+        "unavailable_from": null,
+        "unavailable_until": null,
+        "stops": [
+          {
+            "seq": 1,
+            "type": "DEPOT_START",
+            "location_id": "SC-01",
+            "order_id": null,
+            "arrival": "2026-10-26T09:00:00+05:00",
+            "start": "2026-10-26T09:00:00+05:00",
+            "end": "2026-10-26T09:00:00+05:00",
+            "status": "DONE"
+          },
+          {
+            "seq": 2,
+            "type": "VISIT",
+            "location_id": "B-00001",
+            "order_id": "ORD-20261026-0001",
+            "arrival": "2026-10-26T09:10:01+05:00",
+            "start": "2026-10-26T09:10:01+05:00",
+            "end": "2026-10-26T11:10:00+05:00",
+            "status": "IN_PROGRESS"
+          },
+          {
+            "seq": 3,
+            "type": "BREAK",
+            "location_id": "B-00001",
+            "order_id": null,
+            "arrival": "2026-10-26T11:10:00+05:00",
+            "start": "2026-10-26T12:00:00+05:00",
+            "end": "2026-10-26T13:00:00+05:00",
+            "status": "PLANNED"
+          },
+          {
+            "seq": 4,
+            "type": "DEPOT_END",
+            "location_id": "SC-01",
+            "order_id": null,
+            "arrival": "2026-10-26T13:08:21+05:00",
+            "start": "2026-10-26T13:08:21+05:00",
+            "end": "2026-10-26T13:08:21+05:00",
+            "status": "PLANNED"
+          }
+        ]
+      }
+    ],
+    "unassigned": [
+      {
+        "order_id": "ORD-20261026-0002",
+        "reason_code": "NO_EQUIPMENT",
+        "reason_text": "Не хватает оборудования для визита с учётом доступного пополнения",
+        "suggested_action": "ESCALATE"
+      },
+      {
+        "order_id": "ORD-20261026-0003",
+        "reason_code": "NO_QUALIFIED_STAFF",
+        "reason_text": "Нет сотрудника с подходящим профилем, технологией и допуском",
+        "suggested_action": "ESCALATE"
+      }
+    ],
+    "pgp_groups": [],
+    "cancelled": [],
+    "alerts": [
+      {
+        "alert_id": "LATE-2-ST-001-ORD-20261026-0002",
+        "created_at": "2026-10-26T09:35:00+05:00",
+        "type": "LATE_RISK",
+        "status": "ACTIVE",
+        "order_id": "ORD-20261026-0002",
+        "resolved_at": null,
+        "staff_id": "ST-001",
+        "suggested_staff_id": null,
+        "suggested_action": "RESCHEDULE",
+        "applied": false,
+        "forecast_start": "2026-10-26T11:41:21+05:00",
+        "lateness_min": 22,
+        "message": "Прежний исполнитель не успевает начать визит в слот"
+      }
+    ]
+  }
+}
