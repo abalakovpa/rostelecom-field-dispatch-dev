@@ -1,4 +1,5 @@
-﻿"""Local-only order entry tool. Uses the real REST API; no direct DB writes."""
+﻿from deadlines import calculate_deadline
+"""Local-only order entry tool. Uses the real REST API; no direct DB writes."""
 import json,csv,uuid,os
 from pathlib import Path
 from datetime import datetime,timedelta
@@ -70,7 +71,7 @@ class Handler(BaseHTTPRequestHandler):
             order_id='ORD-'+day.replace('-','')+'-'+str(int(uuid.uuid4().hex[:6],16)%9000+1000)
             order={k:building[k] for k in ['building_id','address','lat','lon','building_type','access_node_id','technology']}
             latest=start+timedelta(minutes=work['max_start_delay_min'] if work['max_start_delay_min'] is not None else 120)
-            order.update(order_id=order_id,work_type_code=work['code'],requires_height=bool(building.get('overhead_line')),registered_at=now,slot={'start':start.isoformat(),'end':end.isoformat()},latest_start=latest.isoformat(),deadline=(start+timedelta(days=3)).isoformat(),required_equipment={'ONT':1 if building['technology']=='PON' else 0,'ROUTER':1,'STB':0},is_repeat=False,previous_order_id=None)
+            order.update(order_id=order_id,work_type_code=work['code'],requires_height=bool(building.get('overhead_line')),registered_at=now,slot={'start':start.isoformat(),'end':end.isoformat()},latest_start=latest.isoformat(),deadline=calculate_deadline(work,now,end.isoformat()),required_equipment={'ONT':1 if building['technology']=='PON' else 0,'ROUTER':1,'STB':0},is_repeat=False,previous_order_id=None)
             result=api('POST','/api/v1/days/'+day+'/events',dict(event_id='LOCAL-'+str(uuid.uuid4()),type='NEW_ORDER',timestamp=now,order=order))
             source_plan=api('GET','/api/ui/days/'+day)['plan']
             dates=[day]
@@ -92,6 +93,7 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as error:self.send(400,{'error':str(error)})
 print('Request panel listening on port 8082',flush=True)
 ThreadingHTTPServer(('0.0.0.0',8082),Handler).serve_forever()
+
 
 
 

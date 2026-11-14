@@ -107,7 +107,7 @@ function selectOrder(order){
   box.append(close,node('div','detail-id',order.order_id),node('h2','',order.address),node('p','',work(order).name),
     detailRow('Статус',statusLabels[state.view.status(order.order_id)]),
     detailRow('Технология',order.technology),detailRow('Слот',`${time(order.slot_start)}–${time(order.slot_end)}`),
-    detailRow('Начать не позднее',time(order.latest_start)),detailRow('Завершить до',new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Yekaterinburg'}).format(new Date(order.deadline))),
+    detailRow('Начать не позднее',time(order.latest_start)),detailRow('Контрольный срок',new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Yekaterinburg'}).format(new Date(order.deadline))),
     detailRow('Узел доступа',order.access_node_id),detailRow('Допуск к высоте',order.requires_height?'Требуется':'Не требуется'));
   if(order.is_repeat)box.append(node('p','repeat-tag','↺ Повторное обращение · повышенный приоритет'));
   const equipment=node('div','equipment');for(const [kind,count]of Object.entries(order.required_equipment)){if(count)equipment.append(node('span','',`${kind} × ${count}`));}
@@ -282,6 +282,7 @@ eventSend.onclick=async()=>{
     await bootstrap();eventStatus.textContent=`${result.duplicate?'Повтор уже принятого события':'Событие принято'} · версия ${result.plan_version} · ${result.processing_ms} мс`;
   }catch(e){eventStatus.textContent=e.message;}finally{eventSend.disabled=!state.day?.plan;$('day').disabled=false;}
 };
+
 
 
 
