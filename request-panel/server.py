@@ -1,8 +1,8 @@
-"""Local-only order entry tool. Uses the real REST API; no direct DB writes."""
+﻿"""Local-only order entry tool. Uses the real REST API; no direct DB writes."""
 import json,csv,uuid,os
 from pathlib import Path
 from datetime import datetime,timedelta
-from http.server import BaseHTTPRequestHandler,HTTPServer
+from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError
 ROOT=Path('/app')
@@ -18,6 +18,10 @@ for work in works:
 reference=dict(service_centers=data('service_centers.json'),staff=data('staff.json'),access_nodes=data('access_nodes.json'),work_types=works)
 buildings=[dict(b,access_node_id=n['access_node_id'],technology=n['technology']) for n in reference['access_nodes'] for b in n['buildings']]
 class Handler(BaseHTTPRequestHandler):
+    def setup(self):
+        super().setup()
+        self.connection.settimeout(20)
+
     def send(self,status,body,kind='application/json; charset=utf-8'):
         raw=body.encode() if isinstance(body,str) else json.dumps(body,ensure_ascii=False).encode();self.send_response(status);self.send_header('Content-Type',kind);self.send_header('Content-Length',str(len(raw)));self.end_headers();self.wfile.write(raw)
     def proxy(self):
@@ -80,6 +84,7 @@ class Handler(BaseHTTPRequestHandler):
         except HTTPError as error:self.send(error.code,json.load(error))
         except Exception as error:self.send(400,{'error':str(error)})
 print('Request panel listening on port 8082',flush=True)
-HTTPServer(('0.0.0.0',8082),Handler).serve_forever()
+ThreadingHTTPServer(('0.0.0.0',8082),Handler).serve_forever()
+
 
 
