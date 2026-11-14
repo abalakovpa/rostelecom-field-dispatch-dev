@@ -23,7 +23,7 @@ docker compose version >/dev/null
 docker info >/dev/null
 if [[ ! -f .env ]]; then
   password="$(od -An -N24 -tx1 /dev/urandom | tr -d ' \n')"
-  (umask 077; printf 'POSTGRES_PASSWORD=%s\nDB_PORT=5432\nAPI_PORT=3000\nLOG_LEVEL=info\n' "$password" > .env)
+  (umask 077; printf 'POSTGRES_PASSWORD=%s\nDB_PORT=5432\nAPI_PORT=8080\nLOG_LEVEL=info\n' "$password" > .env)
   unset password
   echo 'Created .env with a random database password.'
 fi
@@ -35,5 +35,5 @@ fi
 docker compose config --quiet
 docker compose up --build --detach --wait --wait-timeout 180
 docker compose ps
-echo 'API: http://127.0.0.1:3000/health (default port). Database credentials: .env'
+echo 'API: http://127.0.0.1:8080/api/v1/health (default port). Database credentials: .env'
 echo 'No existing volumes or applications were deleted.'

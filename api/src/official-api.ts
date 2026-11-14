@@ -1,0 +1,152 @@
+﻿import { Ajv } from 'ajv';
+import addFormats from 'ajv-formats';
+import type { FastifyInstance } from 'fastify';
+import { ApiError } from './errors.js';
+import { definitions, schemaRef } from './openapi.js';
+import type { Store, Document } from './store.js';
+import type { Planner } from './planning.js';
+const fail = (code: string, message: string, status = 422): never => { throw new ApiError(status, code, message); };
+const unique = (items: any[], key: string) => {
+  const ids = items.map(x => x[key]);
+  if (new Set(ids).size !== ids.length) fail('DUPLICATE_ID', `Duplicate ${key}`);
+};
+function validateReference(r: any) {
+  for (const [list, key] of [['staff','staff_id'],['service_centers','service_center_id'],['access_nodes','access_node_id'],['work_types','code']]) unique(r[list!], key!);
+  const centers = new Set(r.service_centers.map((c: any) => c.service_center_id));
+  for (const worker of r.staff) {
+    if (!centers.has(worker.service_center_id)) fail('UNKNOWN_SERVICE_CENTER', worker.service_center_id);
+    for (const [kind, count] of Object.entries(worker.equipment_start)) {
+      if (Number(count) > (worker.equipment_capacity[kind] ?? 0)) fail('INVALID_EQUIPMENT', 'Start exceeds capacity');
+    }
+  }
+  const buildings = r.access_nodes.flatMap((n: any) => n.buildings);
+  unique(buildings, 'building_id');
+  for (const building of buildings) if (!centers.has(building.zone_service_center_id)) fail('UNKNOWN_SERVICE_CENTER', building.zone_service_center_id);
+}
+function validateMatrix(m: any, reference?: any) {
+  const size = m.points.length;
+  for (const key of ['durations_sec','distances_m']) {
+    if (m[key].length !== size || m[key].some((row: any[], i: number) => row.length !== size || row[i] !== 0)) fail('INVALID_MATRIX', `${key} must be NxN with zero diagonal`);
+  }
+  if (reference) {
+    const points = new Set(m.points);
+    for (const id of [...reference.service_centers.map((c: any) => c.service_center_id), ...reference.access_nodes.flatMap((n: any) => n.buildings.map((b: any) => b.building_id))]) {
+      if (!points.has(id)) fail('INVALID_MATRIX', `Missing point ${id}`);
+    }
+  }
+}
+function validateOrder(o: any, reference: any, date: string, now: string) {
+  if (!reference.work_types.some((w: any) => w.code === o.work_type_code)) fail('UNKNOWN_WORK_TYPE', o.work_type_code);
+  const node = reference.access_nodes.find((n: any) => n.access_node_id === o.access_node_id);
+  if (!node?.buildings.some((b: any) => b.building_id === o.building_id)) fail('UNKNOWN_BUILDING', o.building_id);
+  if (o.slot.start.slice(0,10) !== date || Date.parse(o.registered_at) > Date.parse(now)) fail('INVALID_ORDER_TIME', o.order_id);
+  if (Date.parse(o.slot.start) > Date.parse(o.latest_start) || Date.parse(o.latest_start) > Date.parse(o.slot.end) || Date.parse(o.slot.start) >= Date.parse(o.slot.end)) fail('INVALID_SLOT', o.order_id);
+}
+function requireDay(state: Document, date: string) {
+  const day = state.days[date];
+  if (!day) fail('DAY_NOT_FOUND', date, 404);
+  return day;
+}
+function applyEvent(day: any, e: any, reference: any) {
+  const order = day.input.orders.find((o: any) => o.order_id === e.order_id);
+  const staff = reference.staff.find((s: any) => s.staff_id === e.staff_id);
+  if (e.order_id && !order) fail('UNKNOWN_ORDER', e.order_id);
+  if (e.staff_id && !staff) fail('UNKNOWN_STAFF', e.staff_id);
+  const stop = day.plan.routes.find((r: any) => r.staff_id === e.staff_id)?.stops.find((s: any) => s.order_id === e.order_id && s.type === 'VISIT');
+  if (['VISIT_DELAYED','ORDER_TRANSFERRED'].includes(e.type)) {
+    if (!stop || Date.parse(stop.start) > Date.parse(e.timestamp) || Date.parse(stop.end) <= Date.parse(e.timestamp)) fail('INVALID_VISIT_STATE', 'Visit is not in progress');
+    if (e.type === 'VISIT_DELAYED' && Date.parse(e.expected_end) <= Date.parse(stop.end)) fail('INVALID_EXPECTED_END', 'Expected end must be later');
+    if (e.type === 'ORDER_TRANSFERRED' && (Date.parse(e.actual_end) < Date.parse(stop.start) || Date.parse(e.actual_end) > Date.parse(e.timestamp))) fail('INVALID_ACTUAL_END', 'Actual end is outside visit interval');
+  }
+  if (e.type === 'NEW_ORDER') {
+    if (day.input.orders.some((o: any) => o.order_id === e.order.order_id)) fail('DUPLICATE_ORDER', e.order.order_id);
+    validateOrder(e.order, reference, day.input.date, e.timestamp);
+    day.input.orders.push(e.order);
+  }
+  if (e.type === 'STAFF_UNAVAILABLE' && e.until && Date.parse(e.until) <= Date.parse(e.timestamp)) fail('INVALID_UNAVAILABLE_INTERVAL', 'until must be after timestamp');
+  day.input.now = e.timestamp;
+  day.events.push(e);
+}
+export function registerOfficialApi(app: FastifyInstance, store: Store, planner: Planner) {
+  for (const schema of Object.values(definitions)) app.addSchema(schema);
+  const validator = new Ajv({strict:false});
+  (addFormats as any)(validator);
+  for (const schema of Object.values(definitions)) validator.addSchema(schema);
+  app.addHook('preValidation', async request => {
+    if (request.method === 'POST' && request.url.endsWith('/plan') && request.body === undefined) request.body = {};
+  });
+  const params = { type:'object', required:['date'], properties:{date:{type:'string',format:'date'}} };
+  const response = (name: string) => ({200:schemaRef(name)});
+  app.get('/api/v1/health', {schema:{response:response('Health')}}, async () => store.transact(async () => ({status:'ok', version:'0.2.0'})));
+  app.put('/api/v1/reference', {schema:{body:schemaRef('ReferenceData'),response:response('LoadResult')}}, async request => store.transact(async state => {
+    const r: any = request.body; validateReference(r);
+    if (state.matrix) validateMatrix(state.matrix, r);
+    state.reference = r; state.days = {};
+    return {status:'loaded',counts:{staff:r.staff.length,service_centers:r.service_centers.length,access_nodes:r.access_nodes.length,buildings:r.access_nodes.reduce((n:number,x:any)=>n+x.buildings.length,0),work_types:r.work_types.length}};
+  }));
+  app.put('/api/v1/reference/travel-matrix', {schema:{body:schemaRef('TravelMatrix'),response:response('LoadResult')}}, async request => store.transact(async state => {
+    const m:any=request.body; validateMatrix(m,state.reference); state.matrix=m;
+    return {status:'loaded',counts:{points:m.points.length}};
+  }));
+  app.put<{Params:{date:string}}>('/api/v1/days/:date', {schema:{params,body:schemaRef('DayInput'),response:response('LoadResult')}}, async request => store.transact(async state => {
+    if (!state.reference) fail('REFERENCE_NOT_LOADED','Load reference first',409);
+    const d:any=request.body;
+    if (d.date !== request.params.date) fail('DATE_MISMATCH','Body and path dates differ');
+    unique(d.orders,'order_id');
+    for (const o of d.orders) validateOrder(o,state.reference,d.date,d.now);
+    for (const id of d.absent_staff_ids ?? []) if (!state.reference.staff.some((w:any)=>w.staff_id===id)) fail('UNKNOWN_STAFF',id);
+    state.days[d.date]={input:d,events:[],event_results:{},plan:null};
+    return {status:'loaded',counts:{orders:d.orders.length}};
+  }));
+  async function calculate(state:Document,day:any,event:any,timeout:number) {
+    const started=performance.now();
+    const plan=await planner({reference:state.reference,matrix:state.matrix,day:structuredClone(day.input),previous_plan:structuredClone(day.plan),event},timeout);
+    plan.date=day.input.date; plan.as_of=day.input.now; plan.plan_version=event ? day.plan.plan_version+1 : 1;
+    plan.based_on_event_id=event?.event_id ?? null; plan.computation_ms=Math.round(performance.now()-started);
+    const validate=validator.getSchema('urn:dispatch:Plan');
+    if (!validate?.(plan)) fail('INVALID_PLANNER_RESPONSE','Planner result does not match Plan schema',502);
+    const visits=plan.routes.flatMap((r:any)=>r.stops.filter((s:any)=>s.type==='VISIT').map((s:any)=>s.order_id));
+    const accounted=[...visits,...plan.unassigned.map((o:any)=>o.order_id),...plan.cancelled.map((o:any)=>o.order_id),...plan.pgp_groups.flatMap((g:any)=>g.order_ids)];
+    const expected=day.input.orders.map((o:any)=>o.order_id);
+    if (new Set(accounted).size!==accounted.length || accounted.length!==expected.length || expected.some((id:string)=>!accounted.includes(id))) fail('INVALID_PLANNER_RESPONSE','Plan must account for each order exactly once',502);
+    if (event && day.plan) {
+      for (const oldRoute of day.plan.routes) {
+        const next=plan.routes.find((r:any)=>r.staff_id===oldRoute.staff_id);
+        for (const old of oldRoute.stops.filter((s:any)=>Date.parse(s.start)<Date.parse(event.timestamp))) {
+          const retained=next?.stops.find((s:any)=>s.type===old.type && s.order_id===old.order_id && s.start===old.start);
+          const changedEnd=old.type==='VISIT' && old.order_id===event.order_id && oldRoute.staff_id===event.staff_id && ['VISIT_DELAYED','ORDER_TRANSFERRED'].includes(event.type);
+          if (!retained || retained.location_id!==old.location_id || retained.arrival!==old.arrival || (!changedEnd && retained.end!==old.end)) fail('INVALID_PLANNER_RESPONSE','Started stop was changed',502);
+          if (changedEnd && retained.end!==(event.expected_end ?? event.actual_end)) fail('INVALID_PLANNER_RESPONSE','Event end was not applied',502);
+        }
+      }
+    }
+    day.plan=plan; return plan;
+  }
+  app.post<{Params:{date:string};Body:{time_limit_sec?:number}}>('/api/v1/days/:date/plan', {schema:{params,body:schemaRef('PlanRequest'),response:response('Plan')}}, async request => store.transact(async state => {
+    const day=requireDay(state,request.params.date);
+    if (!state.matrix) fail('MATRIX_NOT_LOADED','Load travel matrix first',409);
+    if (day.events.length) fail('PLAN_ALREADY_UPDATED','Initial plan cannot be rebuilt after events',409);
+    return calculate(state,day,null,(request.body?.time_limit_sec ?? 300)*1000);
+  }));
+  app.get<{Params:{date:string}}>('/api/v1/days/:date/plan', {schema:{params,response:response('Plan')}}, async request => store.transact(async state => {
+    const day=requireDay(state,request.params.date);
+    if (!day.plan) fail('PLAN_NOT_FOUND','Build initial plan first',404);
+    return day.plan;
+  }));
+  app.post<{Params:{date:string}}>('/api/v1/days/:date/events', {schema:{params,body:schemaRef('Event'),response:response('EventResult')}}, async request => store.transact(async state => {
+    const started=performance.now(), day=requireDay(state,request.params.date), e:any=request.body;
+    if (!day.plan) fail('PLAN_NOT_FOUND','Build initial plan first',404);
+    if (day.event_results[e.event_id]) return {...day.event_results[e.event_id],duplicate:true};
+    if (Date.parse(e.timestamp)<Date.parse(day.input.now)) fail('EVENT_OUT_OF_ORDER','Event timestamp precedes model time',409);
+    applyEvent(day,e,state.reference);
+    const prior=day.plan;
+    const plan=await calculate(state,day,e,9000);
+    const result={event_id:e.event_id,accepted:true,duplicate:false,plan_version:plan.plan_version,as_of:plan.as_of,processing_ms:Math.round(performance.now()-started),changed_staff_ids:plan.routes.filter((r:any)=>JSON.stringify(r)!==JSON.stringify(prior.routes.find((p:any)=>p.staff_id===r.staff_id))).map((r:any)=>r.staff_id),new_alerts:plan.alerts.filter((a:any)=>!prior.alerts.some((p:any)=>p.alert_id===a.alert_id))};
+    day.event_results[e.event_id]=result;
+    return result;
+  }));
+}
+
+
+
+
