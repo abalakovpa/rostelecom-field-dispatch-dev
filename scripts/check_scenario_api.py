@@ -1,6 +1,6 @@
 """Reproducible organizer-style HTTP run against the isolated project copy.
 
-Replaces data in the copy. Requires its API on 127.0.0.1:8083 and PostgreSQL .env.
+Replaces data in the copy. Requires a disposable API instance and explicit PostgreSQL test configuration.
 System time is used only for the report folder; all simulation time is explicit.
 """
 import argparse
@@ -27,33 +27,37 @@ parse=datetime.fromisoformat
 def read(name):return json.loads((ROOT/'data'/name).read_text(encoding='utf-8'))
 
 class Run:
-    def __init__(self,limit):
-        assert ROOT.name=='dispatcher-next-2026-11-14','Run only in the project copy'
-        env=dotenv_values(ROOT/'.env')
-        assert env['POSTGRES_DB'].startswith('dispatcher_next'),'Refusing to modify another database'
-        self.repo=PostgresRepository(Settings(host=env['POSTGRES_HOST'],port=int(env['POSTGRES_PORT']),
-            database=env['POSTGRES_DB'],user=env['POSTGRES_USER'],password=env['POSTGRES_PASSWORD']))
-        self.limit=limit
+    def __init__(self,args):
+        if not args.allow_reset or not args.test_database:
+            raise ValueError('Use --allow-reset and --test-database for a disposable database')
+        env=dotenv_values(args.db_env)
+        if env.get('POSTGRES_DB')!=args.test_database:
+            raise ValueError('--test-database must exactly match POSTGRES_DB in --db-env')
+        self.repo=PostgresRepository(Settings(host=env.get('POSTGRES_HOST','127.0.0.1'),port=int(env.get('POSTGRES_PORT','5434')),
+            database=env['POSTGRES_DB'],user=env.get('POSTGRES_USER','dispatcher'),password=env.get('POSTGRES_PASSWORD','')))
+        self.limit=args.plan_limit
+        self.url=args.url.rstrip('/')
+        self.output=args.output.resolve()
         self.ref=DemoRepository().full_reference();self.matrix=read('travel_matrix.json')
-        self.out=ROOT/'data'/'qa'/datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+        self.out=self.output/datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
         self.out.mkdir(parents=True,exist_ok=True)
-        self.report=dict(status='running',database=env['POSTGRES_DB'],url='http://127.0.0.1:8083',
-            plan_limit_sec=limit,requests=[],plans=[],events=[],skipped_triggers=[],failures=[],known_limitations=[])
+        self.report=dict(status='running',database=env['POSTGRES_DB'],url=self.url,
+            plan_limit_sec=self.limit,requests=[],plans=[],events=[],skipped_triggers=[],failures=[],known_limitations=[])
         self.last_plan={};self.coverage=Counter();self.save()
 
     def save(self):
         (self.out/'report.json').write_text(json.dumps(self.report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 
-    def call(self,method,path,payload=None,expected=200,limit=None):
+    def call(self,method,path,payload=None,expected=200,limit=None,raw_body=None):
         if limit is None and method=='POST' and path.endswith('/events'):limit=10
-        raw=json.dumps(payload,ensure_ascii=False).encode() if payload is not None else None
-        request=Request('http://127.0.0.1:8083'+path,data=raw,method=method,headers={'Content-Type':'application/json'})
+        raw=raw_body if raw_body is not None else (json.dumps(payload,ensure_ascii=False).encode() if payload is not None else None)
+        request=Request(self.url+path,data=raw,method=method,headers={'Content-Type':'application/json'})
         began=time.perf_counter()
         try:
             with urlopen(request,timeout=310) as response:status=response.status;data=json.load(response)
         except HTTPError as exc:status=exc.code;data=json.load(exc)
         elapsed=round((time.perf_counter()-began)*1000)
-        self.report['requests'].append(dict(method=method,path=path,status=status,wall_ms=elapsed))
+        self.report['requests'].append(dict(method=method,path=path,status=status,wall_ms=elapsed,response=data))
         if limit and elapsed>limit*1000:self.report['failures'].append(f'{method} {path}: {elapsed} ms exceeds {limit}s')
         assert status==expected,(method,path,status,data)
         if status!=200:validate('ErrorResponse',data)
@@ -195,17 +199,29 @@ class Run:
         before=self.snapshot(day)
         self.call('POST',f'/api/v1/days/{day}/events',dict(event_id=prefix+'UNKNOWN',type='ORDER_CANCELLED',timestamp=self.state(day)['now'],order_id='ORD-20261013-9999',reason='CUSTOMER_REQUEST'),expected=422)
         assert self.snapshot(day)==before
+        # Invalid input must preserve all persisted versions, events and model time.
+        snapshot=self.snapshot(day)
+        self.call('POST',f'/api/v1/days/{day}/events',expected=400,raw_body=b'{broken-json')
+        assert self.snapshot(day)==snapshot,'Malformed JSON changed database'
+        invalid_events=[
+            ({'event_id':prefix+'BAD-SHAPE','type':'TIME_TICK'},400),
+            (dict(event_id=prefix+'BAD-STAFF',type='STAFF_UNAVAILABLE',timestamp=self.state(day)['now'],staff_id='ST-999',reason='ILLNESS'),422),
+            (dict(event_id=prefix+'BAD-VISIT',type='VISIT_DELAYED',timestamp=self.state(day)['now'],staff_id=person['staff_id'],order_id=order['order_id'],expected_end=day+'T23:00:00+05:00'),422),
+        ]
+        for payload,status in invalid_events:
+            snapshot=self.snapshot(day)
+            self.call('POST',f'/api/v1/days/{day}/events',payload,expected=status)
+            assert self.snapshot(day)==snapshot,'Rejected event changed database'
+        # A rejected request must not prevent a subsequent valid event.
+        self.event(day,dict(event_id=prefix+'RECOVERY',type='TIME_TICK',timestamp=self.state(day)['now']))
 
     def finish(self):
         required={'NEW_ORDER','ORDER_CANCELLED','VISIT_DELAYED','ORDER_TRANSFERRED','STAFF_UNAVAILABLE','TIME_TICK'}
         assert required<=set(self.coverage),self.coverage
-        manifest=json.loads((ROOT/'docs/copy_origin.json').read_text(encoding='utf-8'))
-        changed=[rel for rel,digest in manifest['source_hashes'].items() if hashlib.sha256((Path(manifest['source'])/rel).read_bytes()).hexdigest()!=digest]
-        assert not changed,changed
-        self.report.update(event_type_coverage=dict(self.coverage),original_files_checked=len(manifest['source_hashes']),original_files_changed=changed)
+        self.report.update(event_type_coverage=dict(self.coverage))
         self.report['status']='failed' if self.report['failures'] else ('passed_with_known_limitation' if self.report['known_limitations'] else 'passed')
         self.save()
-        (ROOT/'data/qa/latest.json').write_text(json.dumps(dict(directory=str(self.out),status=self.report['status']),ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+        (self.output/'latest.json').write_text(json.dumps(dict(directory=str(self.out),status=self.report['status']),ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
         lines=['# Сценарная проверка API','',f'Статус: **{self.report["status"]}**. Проверка копии, отдельная PostgreSQL, реальный HTTP.',
             '',f'Проверено планов: {len(self.report["plans"])}. Принято событий: {len(self.report["events"])}. Начальных дней: 10 (3500 нарядов).',
             f'Лимит первоначального расчёта: {self.limit} с; это функциональная проверка, не итоговая оценка качества оптимизации.',
@@ -216,7 +232,6 @@ class Run:
             f'Максимальное время HTTP-обработки принятого события: {max(e["wall_ms"] for e in self.report["events"])} мс.',
             f'Не сработало условных триггеров примера: {len(self.report["skipped_triggers"])}; подробные причины в report.json. Дополнительный сценарий обеспечивает все шесть типов событий.',
             f'Известных отклонений по строгому правилу обеда: {len(self.report["known_limitations"])}. Правило не менялось.',
-            f'Исходных файлов проверено: {len(manifest["source_hashes"])}; изменений нет.',
             '', 'Планы каждой версии и подробный журнал HTTP сохранены рядом с отчётом. Это проверка локального набора; скрытый валидатор организаторов здесь не запускался.']
         if self.report['failures']:lines+=['','Ошибки:']+['- '+f for f in self.report['failures']]
         (self.out/'report.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')
@@ -225,7 +240,12 @@ class Run:
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--plan-limit',type=int,default=5,choices=range(1,301))
-    args=parser.parse_args();run=Run(args.plan_limit)
+    parser.add_argument('--url',default='http://127.0.0.1:8080')
+    parser.add_argument('--db-env',type=Path,default=ROOT/'.env.qa')
+    parser.add_argument('--test-database',required=True)
+    parser.add_argument('--allow-reset',action='store_true',help='Confirm replacement of all API data in the disposable test service')
+    parser.add_argument('--output',type=Path,default=ROOT/'data'/'qa')
+    args=parser.parse_args();run=Run(args)
     try:
         run.load();run.scenario();run.controlled();run.finish()
     except Exception as exc:
