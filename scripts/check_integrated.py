@@ -38,3 +38,35 @@ response=call('POST',path+'/events',outage);assert response['plan_version']==3
 outage_plan=call('GET',path+'/plan');assert outage_plan['interrupted_visits']
 assert outage_plan['interrupted_visits'][0]['staff_id']=='ST-001'
 print('INTERRUPTION SMOKE PASSED')
+
+# Automatic new slot must be persisted, and UI must read the same slot.
+# Earlier outage interrupts the first visit; the original window is already missed.
+assert outage_plan['automatic_reschedules'],outage_plan
+ui=call('GET','/api/ui/days/'+day['date'])
+for change in outage_plan['automatic_reschedules']:
+    order=next(o for o in ui['orders'] if o['order_id']==change['order_id'])
+    assert order['slot_start']==change['slot']['start']
+print('AUTOMATIC RESCHEDULE PERSISTENCE PASSED')
+
+# Independent incident fixture: four repair-like orders linked as metadata,
+# each still accounted once by an individual visit or unassigned record.
+from copy import deepcopy
+incident_ref=deepcopy(example['reference'])
+for work in incident_ref['work_types']:work['pgp_relevant']=True
+call('PUT','/api/v1/reference',incident_ref)
+call('PUT','/api/v1/reference/travel-matrix',example['matrix'])
+incident_day=deepcopy(example['day'])
+for o in incident_day['orders']:o['registered_at']=incident_day['now']
+call('PUT',path,incident_day)
+initial=call('POST',path+'/plan',{'time_limit_sec':5})
+assert len(initial['incident_groups'])==1
+identity=initial['incident_groups'][0]['group_id']
+fourth=deepcopy(incident_day['orders'][0]);fourth['order_id']='ORD-20261026-0999'
+event={'event_id':'FOURTH-INCIDENT','type':'NEW_ORDER','timestamp':incident_day['now'],'order':fourth}
+call('POST',path+'/events',event)
+expanded=call('GET',path+'/plan')
+assert expanded['incident_groups'][0]['group_id']==identity
+assert len(expanded['incident_groups'][0]['order_ids'])==4
+assert not expanded['pgp_groups']
+assert sum(s['type']=='VISIT' for r in expanded['routes'] for s in r['stops'])+len(expanded['unassigned'])==4
+print('INCIDENT EXPANSION PERSISTENCE PASSED')

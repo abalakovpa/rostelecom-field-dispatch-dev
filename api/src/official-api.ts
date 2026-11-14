@@ -1,4 +1,4 @@
-import { Ajv } from 'ajv';
+﻿import { Ajv } from 'ajv';
 import addFormats from 'ajv-formats';
 import type { FastifyInstance } from 'fastify';
 import { ApiError } from './errors.js';
@@ -112,6 +112,17 @@ export function registerOfficialApi(app: FastifyInstance, store: Store, planner:
   async function calculate(state:Document,day:any,event:any,timeout:number) {
     const started=performance.now();
     const plan=await planner({reference:state.reference,matrix:state.matrix,day:structuredClone(day.input),previous_plan:structuredClone(day.plan),event},timeout);
+    for(const update of plan._order_updates ?? []) {
+      const order=day.input.orders.find((o:any)=>o.order_id===update.order_id);
+      if(!order)fail('INVALID_PLANNER_RESPONSE','Reschedule refers to an unknown order',502);
+      const candidate={...order,slot:update.slot,latest_start:update.latest_start};
+      const validateOrderSchema=validator.getSchema('urn:dispatch:Order');
+      if(!validateOrderSchema?.(candidate))fail('INVALID_PLANNER_RESPONSE','Invalid rescheduled order',502);
+      validateOrder(candidate,state.reference,day.input.date,day.input.now);
+      if(Date.parse(candidate.slot.start)<Date.parse(day.input.now) || Date.parse(candidate.latest_start)>Date.parse(order.deadline))fail('INVALID_PLANNER_RESPONSE','Reschedule is outside allowed time',502);
+      order.slot=update.slot;order.latest_start=update.latest_start;
+    }
+    delete plan._order_updates;
     plan.date=day.input.date; plan.as_of=day.input.now; plan.plan_version=event ? day.plan.plan_version+1 : 1;
     plan.based_on_event_id=event?.event_id ?? null; plan.computation_ms=Math.round(performance.now()-started);
     for (const route of plan.routes ?? []) {
@@ -173,6 +184,7 @@ export function registerOfficialApi(app: FastifyInstance, store: Store, planner:
     return result;
   }));
 }
+
 
 
 
