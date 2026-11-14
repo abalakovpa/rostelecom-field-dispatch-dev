@@ -41,7 +41,9 @@ function validateOrder(o: any, reference: any, date: string, now: string) {
     const person=reference.staff.find((p:any)=>p.staff_id===o._test_staff_id);
     const work=reference.work_types.find((w:any)=>w.code===o.work_type_code);
     if(!person)fail('UNKNOWN_STAFF','Selected test employee does not exist');
-    if(!person.profiles.some((profile:string)=>work.profiles.includes(profile)) || !person.technologies.includes(o.technology) || (o.requires_height && !person.height_permit))fail('STAFF_NOT_QUALIFIED','Selected employee lacks the required profile, technology or height permit');
+    if(!person.profiles.some((profile:string)=>work.profiles.includes(profile)))fail('STAFF_NOT_QUALIFIED','У сотрудника нет нужного профиля: '+work.profiles.map((p:string)=>p==='INSTALL'?'инсталляция':'3ЛТП').join(' или '));
+    if(!person.technologies.includes(o.technology))fail('STAFF_NOT_QUALIFIED','Сотрудник не обучен технологии '+o.technology);
+    if(o.requires_height && !person.height_permit)fail('STAFF_NOT_QUALIFIED','У сотрудника нет допуска к работам на высоте');
     if(Object.entries(o.required_equipment).some(([kind,count])=>Number(count)>(person.equipment_capacity[kind] ?? 0)))fail('NO_EQUIPMENT','Equipment demand exceeds selected employee capacity');
   }
   const node = reference.access_nodes.find((n: any) => n.access_node_id === o.access_node_id);
