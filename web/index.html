@@ -9,16 +9,17 @@
   <link rel="stylesheet" href="/static/dispatcher.css?v=dispatcher-2">
   <link rel="stylesheet" href="/static/map.css?v=maplibre-1">
   <link rel="stylesheet" href="/static/shell.css?v=rt-1">
-  <script type="module" src="/static/app.js?v=rt-1"></script>
+  <link rel="stylesheet" href="/static/polish.css?v=1">
+  <script type="module" src="/static/app.js?v=polish-1"></script>
 </head>
 <body>
   <aside class="rail" id="workspace-nav" aria-label="Рабочее пространство">
     <div class="brand" aria-label="Ростелеком"><img src="/static/rostelecom.svg" alt="Ростелеком" width="162" height="34"></div>
-    <div class="rail-label">РАБОЧЕЕ ПРОСТРАНСТВО</div>
+    <div class="rail-label">Рабочее пространство</div>
     <nav class="workspace-nav" aria-label="Разделы диспетчерской">
-      <button class="nav-item active" data-view="map" aria-controls="map-view" aria-current="page" title="Карта и наряды"><span class="nav-icon" aria-hidden="true">◈</span><span class="nav-label">Карта и наряды</span></button>
-      <button class="nav-item" data-view="timeline" aria-controls="timeline-view" title="План смены по времени"><span class="nav-icon" aria-hidden="true">▤</span><span class="nav-label">План смены по времени</span></button>
-      <button class="nav-item" data-view="warnings" aria-controls="warnings-view" title="Предупреждения"><span class="nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></span><span class="nav-label">Предупреждения</span><i id="warning-indicator" class="warning-indicator unknown" role="status" aria-label="План ещё не рассчитан"></i></button>
+      <button class="nav-item active" data-view="map" aria-controls="map-view" aria-current="page" title="Карта и наряды"><span class="nav-icon" aria-hidden="true" data-icon="map"></span><span class="nav-label">Карта и наряды</span></button>
+      <button class="nav-item" data-view="timeline" aria-controls="timeline-view" title="План смены по времени"><span class="nav-icon" aria-hidden="true" data-icon="timeline"></span><span class="nav-label">План смены по времени</span></button>
+      <button class="nav-item" data-view="warnings" aria-controls="warnings-view" title="Предупреждения"><span class="nav-icon" aria-hidden="true" data-icon="bell"></span><span class="nav-label">Предупреждения</span><i id="warning-indicator" class="warning-indicator unknown" role="status" aria-label="План ещё не рассчитан"></i></button>
     </nav>
     <div class="rail-bottom">
       <span class="city-dot" aria-hidden="true"></span>
@@ -27,26 +28,26 @@
   </aside>
   <button id="nav-backdrop" class="nav-backdrop" aria-label="Закрыть меню" hidden></button>
   <main>
-    <header class="topbar"><button id="nav-toggle" class="nav-toggle" aria-label="Открыть рабочее пространство" aria-controls="workspace-nav" aria-expanded="false">☰</button><div class="mobile-brand"><img src="/static/rostelecom.svg" alt="Ростелеком" width="162" height="34"></div><div class="breadcrumbs">Екатеринбург <span>/</span> Обзор дня</div><div id="source" class="source">Подключение…</div></header>
-    <section class="heading"><div><div class="eyebrow">ОБЗОР СМЕНЫ</div><h1>Наряды и маршруты</h1><p>Назначения сотрудников и адреса на выбранную дату.</p></div><div class="day-controls"><label for="day">Дата смены</label><div class="day-row"><select id="day" disabled aria-label="Дата смены"></select><button id="refresh" class="square-button" title="Обновить данные" aria-label="Обновить данные">↻</button></div></div></section>
+    <header class="topbar"><button id="nav-toggle" class="nav-toggle" aria-label="Открыть рабочее пространство" aria-controls="workspace-nav" aria-expanded="false"><span data-icon="menu" aria-hidden="true"></span></button><div class="mobile-brand"><img src="/static/rostelecom.svg" alt="Ростелеком" width="162" height="34"></div><div class="breadcrumbs">Екатеринбург <span>/</span> Обзор дня</div><div id="source" class="source">Подключение…</div></header>
+    <section class="heading"><div><div class="eyebrow">Обзор смены</div><h1>Наряды и маршруты</h1><p>Назначения сотрудников и адреса на выбранную дату</p></div><div class="day-controls"><label for="day">Дата смены</label><div class="day-row"><select id="day" disabled aria-label="Дата смены"></select><button id="refresh" class="square-button" title="Обновить данные" aria-label="Обновить данные"><span data-icon="refresh" aria-hidden="true"></span></button></div></div></section>
     <div id="error" class="error" role="alert" hidden></div>
     <section id="map-view" data-panel="map" aria-label="Карта и наряды">
     <section class="metrics" aria-label="Показатели дня">
-      <article><div><span>Наряды на день</span><strong id="total">—</strong><small>Загружены в систему</small></div><span class="metric-icon orange">▤</span></article>
-      <article><div><span>Сотрудники</span><strong id="staff-count">—</strong><small>В справочнике команды</small></div><span class="metric-icon violet">♧</span></article>
-      <article><div><span>Сервисные центры</span><strong id="center-count">—</strong><small>Старт и возврат в СЦ</small></div><span class="metric-icon green">⌂</span></article>
+      <article><div><span>Наряды на день</span><strong id="total">—</strong><small>Загружены в систему</small></div></article>
+      <article><div><span>Сотрудники</span><strong id="staff-count">—</strong><small>В справочнике команды</small></div></article>
+      <article><div><span>Сервисные центры</span><strong id="center-count">—</strong><small>Старт и возврат в СЦ</small></div></article>
     </section>
     <section class="workspace" aria-label="Карта и список нарядов">
       <aside class="orders-panel">
         <div class="panel-tabs"><button id="orders-tab" class="selected" aria-pressed="true">Наряды <span id="list-count">0</span></button><button id="staff-tab" aria-pressed="false">Команда</button></div>
-        <div class="filters"><label class="search"><span>⌕</span><input id="search" type="search" placeholder="Адрес, номер наряда или дома" aria-label="Поиск по адресу, наряду или дому"></label><div class="filter-row"><select id="technology" aria-label="Технология"><option value="">Все технологии</option><option>PON</option><option>FTTB</option><option>XDSL</option><option>DOCSIS</option></select><select id="profile" aria-label="Профиль работ"><option value="">Все профили</option><option value="INSTALL">Инсталляция</option><option value="LTP3">3ЛТП</option></select></div><div class="list-heading"><span id="results-text">Загружаем адреса…</span><button id="reset">Сбросить</button></div></div>
+        <div class="filters"><label class="search"><span data-icon="search" aria-hidden="true"></span><input id="search" type="search" placeholder="Адрес, номер наряда или дома" aria-label="Поиск по адресу, наряду или дому"></label><div class="filter-row"><select id="technology" aria-label="Технология"><option value="">Все технологии</option><option>PON</option><option>FTTB</option><option>XDSL</option><option>DOCSIS</option></select><select id="profile" aria-label="Профиль работ"><option value="">Все профили</option><option value="INSTALL">Инсталляция</option><option value="LTP3">3ЛТП</option></select></div><div class="list-heading"><span id="results-text">Загружаем адреса…</span><button id="reset">Сбросить</button></div></div>
         <div id="list" class="order-list" aria-live="polite"></div>
         <div class="panel-footer"><span class="tiny-dot"></span><span id="model-time">Модельное время —</span></div>
       </aside>
       <section class="map-panel" aria-label="Карта Екатеринбурга">
         <div id="map"></div>
-        <div class="map-heading"><span class="live-dot"></span><span>ЕКАТЕРИНБУРГ</span><span class="map-heading-divider"></span><span id="map-count">Адреса дня</span></div>
-        <div class="map-view-controls"><button id="show-city" class="fit-button" title="Показать весь Екатеринбург">⌖ <span>Весь город</span></button><button id="fit" class="fit-button" title="Показать все точки выбранных нарядов">⌖ <span>Все точки</span></button></div>
+        <div class="map-heading"><span class="live-dot"></span><span>Екатеринбург</span><span class="map-heading-divider"></span><span id="map-count">Адреса дня</span></div>
+        <div class="map-view-controls"><button id="show-city" class="fit-button" title="Показать весь Екатеринбург"><span data-icon="locate" aria-hidden="true"></span><span>Весь город</span></button><button id="fit" class="fit-button" title="Показать все точки выбранных нарядов"><span data-icon="locate" aria-hidden="true"></span><span>Все точки</span></button></div>
         <div id="tiles-warning" class="tiles-warning" hidden>Подложка карты недоступна. Точки и список работают; проверьте интернет.</div>
         <div class="map-legend"><span><i class="legend-dot orange-dot"></i>Наряд</span><span><i class="legend-dot repeat-dot"></i>Повтор</span><span><i class="legend-depot"></i>Сервисный центр</span><span><i class="legend-dot legend-risk"></i>Риск</span><span><i class="legend-dot legend-pgp"></i>ПГП</span><span><i class="legend-dot legend-cancelled"></i>Отменён</span></div>
         <div id="details" class="details" hidden></div>

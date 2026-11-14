@@ -1,6 +1,6 @@
 export function createNavigation(getMap){
  const rail=document.getElementById('workspace-nav'),toggle=document.getElementById('nav-toggle'),backdrop=document.getElementById('nav-backdrop');
- const labels={map:['Наряды и маршруты','Назначения сотрудников и адреса на выбранную дату.'],timeline:['План смены по времени','Работы, дорога и перерывы сотрудников.'],warnings:['Предупреждения','Активные сигналы и история за выбранную смену.']};
+ const labels={map:['Наряды и маршруты','Назначения сотрудников и адреса на выбранную дату'],timeline:['План смены по времени','Работы, дорога и перерывы сотрудников'],warnings:['Предупреждения','Активные сигналы и история за выбранную смену']};
  function close(){rail.classList.remove('expanded');rail.classList.add('dismissed');toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-label','Открыть рабочее пространство');backdrop.hidden=true;}
  rail.addEventListener('pointerenter',()=>rail.classList.remove('dismissed'));
  function show(view){

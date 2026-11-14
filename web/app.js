@@ -1,3 +1,4 @@
+import {icon,applyIcons} from './icons.js';
 import {time,fullTime,shiftTime} from './ui-format.js';
 import {createNavigation} from './navigation.js';
 import {createEventId} from './uuid.js';
@@ -6,6 +7,7 @@ import {projectDay,statusLabels,actionLabels,matchesOrderStatus,markerSummary} f
 import {createDispatcher} from './dispatcher-view.js';
 import {MapView} from './map-view.js';
 const $=id=>document.getElementById(id);
+applyIcons();
 const state={ref:null,day:null,tab:'orders',selected:null,request:0,markers:new Map(),geometryRequest:0,status:'all',view:null,planning:false};
 const techColors={PON:'#df8b4e',FTTB:'#6d58ae',XDSL:'#548f8b',DOCSIS:'#bd7897'};
 const dateLabel=value=>new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'long',year:'numeric',timeZone:'Asia/Yekaterinburg'}).format(new Date(value+'T12:00:00+05:00'));
@@ -75,8 +77,8 @@ function orderCard(order){
   const w=work(order);const card=node('button',`order-card${state.selected===order.order_id?' chosen':''}`);card.type='button';
   const top=node('div','card-top');top.append(node('span','order-id',order.order_id),node('span','tech-chip',order.technology));
   const bottom=node('div','card-bottom');bottom.append(node('span','time-tag',`${time(order.slot_start)} — ${time(order.slot_end)}`),node('span','',`${w.duration_min} мин`));
-  if(order.is_repeat)bottom.append(node('span','repeat-tag','↺ Повтор'));
-  if(order.requires_height)bottom.append(node('span','height-tag','△ Высота'));
+  if(order.is_repeat)bottom.append(node('span','repeat-tag','Повтор'));
+  if(order.requires_height)bottom.append(node('span','height-tag','Допуск к высоте'));
   card.append(top,node('h3','',order.address),node('div','card-work',w.name),bottom);
   const assignment=assigned(order.order_id);
   if(assignment)card.append(node('div','assignment',`${assignment.staff} · визит ${assignment.number} · ${time(assignment.stop.start)}`));
@@ -96,7 +98,7 @@ function staffCard(person){
   card.addEventListener('click',()=>{
     const center=state.ref.service_centers.find(c=>c.service_center_id===person.service_center_id);
     const box=$('details');box.replaceChildren();box.hidden=false;
-    const close=node('button','close','×');close.setAttribute('aria-label','Закрыть карточку');close.onclick=()=>{box.hidden=true;};
+    const close=node('button','close');close.append(icon('x'));close.setAttribute('aria-label','Закрыть карточку');close.onclick=()=>{box.hidden=true;};
     box.append(close,node('div','detail-id',person.staff_id),node('h2','',person.display_name||person.staff_id),node('p','',person.technologies.join(' · ')),
       detailRow('Сервисный центр',person.service_center_id),detailRow('Смена',`${shiftTime(state.day.date,person.shift_start)}–${shiftTime(state.day.date,person.shift_end)}`),
       node('p','', 'Положение показано по закреплённому СЦ. Текущая GPS-позиция не поступала.'));
@@ -109,14 +111,14 @@ function selectOrder(order){
   state.selected=order.order_id;render();
   const box=$('details');box.replaceChildren();box.hidden=false;
   const assignment=assigned(order.order_id);
-  const close=node('button','close','×');close.setAttribute('aria-label','Закрыть карточку');close.addEventListener('click',()=>{box.hidden=true;state.selected=null;render();});
+  const close=node('button','close');close.append(icon('x'));close.setAttribute('aria-label','Закрыть карточку');close.addEventListener('click',()=>{box.hidden=true;state.selected=null;render();});
   box.append(close,node('div','detail-id',order.order_id),node('h2','',order.address),node('p','',work(order).name),
     detailRow('Статус',statusLabels[state.view.status(order.order_id)]),
     detailRow('Технология',order.technology),detailRow('Слот',`${time(order.slot_start)}–${time(order.slot_end)}`),
     detailRow('Начать не позднее',time(order.latest_start)),detailRow('Назначено выполнить до',assignment?fullTime(assignment.stop.end):'Назначение ещё не получено'),
     detailRow('Узел доступа',order.access_node_id),detailRow('Допуск к высоте',order.requires_height?'Требуется':'Не требуется'));
   const normative=node('details');normative.append(node('summary','','Нормативный срок по ТЗ'),node('p','',fullTime(order.deadline)+' · используется для оценки просрочки, не является назначенным временем визита'));box.append(normative);
-  if(order.is_repeat)box.append(node('p','repeat-tag','↺ Повторное обращение · повышенный приоритет'));
+  if(order.is_repeat)box.append(node('p','repeat-tag','Повторное обращение · повышенный приоритет'));
   const equipment=node('div','equipment');for(const [kind,count]of Object.entries(order.required_equipment)){if(count)equipment.append(node('span','',`${kind} × ${count}`));}
   if(!equipment.childNodes.length)equipment.append(node('span','','АО не требуется'));box.append(equipment);
   if(assignment)box.append(detailRow('Исполнитель',assignment.staff),detailRow('Назначенный визит',`${fullTime(assignment.stop.start)}–${time(assignment.stop.end)}`));

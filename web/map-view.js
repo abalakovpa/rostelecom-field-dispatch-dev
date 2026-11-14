@@ -1,3 +1,4 @@
+import {icon} from './icons.js';
 import * as maplibregl from './vendor/maplibre-gl.js';
 import {routeFeatures,boundsOf} from './map-data.js';
 
@@ -38,7 +39,8 @@ export class MapView{
   }
   marker(group,{lat,lon,className,text,title,popup,zIndex=0}){
     const element=document.createElement('button');element.type='button';element.className='map-marker '+className;
-    element.textContent=text;element.title=title;element.setAttribute('aria-label',title);element.style.zIndex=String(zIndex);
+    if(group==='centers')element.append(icon('house'));else element.textContent=text;
+    element.title=title;element.setAttribute('aria-label',title);element.style.zIndex=String(zIndex);
     const marker=new maplibregl.Marker({element,anchor:'center'}).setLngLat([lon,lat]).addTo(this.map);
     element.addEventListener('click',event=>{
       event.stopPropagation();this.closePopup();this.popupGroup=group;
