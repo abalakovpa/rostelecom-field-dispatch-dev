@@ -1,4 +1,5 @@
 from compatibility import work_fits_building
+from debug_events import make_event
 from deadlines import calculate_deadline
 """Local-only order entry tool. Uses the real REST API; no direct DB writes."""
 import json,csv,uuid,os
@@ -28,8 +29,9 @@ class Handler(BaseHTTPRequestHandler):
     def send(self,status,body,kind='application/json; charset=utf-8'):
         raw=body.encode() if isinstance(body,str) else json.dumps(body,ensure_ascii=False).encode();self.send_response(status);self.send_header('Content-Type',kind);self.send_header('Cache-Control','no-store');self.send_header('Content-Length',str(len(raw)));self.end_headers();self.wfile.write(raw)
     def proxy(self):
-        if not self.path.startswith(('/api/','/static/')) and self.path!='/map':self.send(404,{'error':'Not found'});return
-        path='/' if self.path=='/map' else self.path
+        is_map=urlsplit(self.path).path=='/map'
+        if not self.path.startswith(('/api/','/static/')) and not is_map:self.send(404,{'error':'Not found'});return
+        path='/' if is_map else self.path
         try:
             raw=None
             if self.command=='POST':
@@ -38,9 +40,13 @@ class Handler(BaseHTTPRequestHandler):
                 raw=self.rfile.read(size)
             request=Request(API_URL+path,data=raw,method=self.command,headers={'Content-Type':'application/json'})
             with urlopen(request,timeout=35) as response:
-                raw=response.read();self.send_response(response.status);self.send_header('Content-Type',response.headers.get('Content-Type','application/octet-stream'));self.send_header('Content-Length',str(len(raw)));self.end_headers();self.wfile.write(raw)
+                raw=response.read()
+                if is_map and parse_qs(urlsplit(self.path).query).get('debug')==['1']:
+                    raw+=b'<script type="module" src="/static/debug-map.js"></script>'
+                self.send_response(response.status);self.send_header('Content-Type',response.headers.get('Content-Type','application/octet-stream'));self.send_header('Cache-Control','no-store');self.send_header('Content-Length',str(len(raw)));self.end_headers();self.wfile.write(raw)
         except HTTPError as error:self.send(error.code,json.load(error))
     def do_GET(self):
+        if self.path=='/debug.js':self.send(200,(Path(__file__).parent/'debug.js').read_text(encoding='utf-8'),'text/javascript; charset=utf-8');return
         if self.path.startswith('/stats?'):
             try:
                 date=parse_qs(urlsplit(self.path).query).get('date',[''])[0]
@@ -51,7 +57,7 @@ class Handler(BaseHTTPRequestHandler):
                 if error.code==404:self.send(200,{'date':date,'total':0,'assigned':0,'unassigned':0,'pending':0,'transferred':0,'risks':0,'plan_built':False})
                 else:self.send(error.code,json.load(error))
             return
-        if self.path=='/map' or self.path.startswith(('/api/','/static/')):self.proxy();return
+        if urlsplit(self.path).path=='/map' or self.path.startswith(('/api/','/static/')):self.proxy();return
         if self.path=='/catalog':self.send(200,api('GET','/api/ui/catalog'));return
         if self.path=='/':self.send(200,(Path(__file__).parent/'index.html').read_text(encoding='utf-8-sig'),'text/html; charset=utf-8');return
         self.send(404,{'error':'Not found'})
@@ -60,6 +66,19 @@ class Handler(BaseHTTPRequestHandler):
             if self.headers.get('Content-Type','').split(';')[0]!='application/json':self.send(415,{'error':'JSON required'});return
             self.proxy();return
         if self.headers.get('X-Requested-With')!='request-panel':self.send(403,{'error':'Panel header required'});return
+        if self.path=='/debug/event':
+            try:
+                size=int(self.headers.get('Content-Length',0))
+                if not 0<size<65536:raise ValueError('Некорректный размер запроса')
+                body=json.loads(self.rfile.read(size));day=body['date']
+                snapshot=api('GET','/api/ui/days/'+day)
+                event=make_event(body,snapshot)
+                result=api('POST','/api/v1/days/'+day+'/events',event)
+                self.send(200,{'event':event,'result':result})
+            except HTTPError as error:self.send(error.code,json.load(error))
+            except TimeoutError:self.send(504,{'error':'Ответ задерживается. Обновите снимок перед повторной отправкой.'})
+            except Exception as error:self.send(400,{'error':str(error)})
+            return
         if self.path=='/seed':
             try:
                 current=api('GET','/api/ui/bootstrap')
