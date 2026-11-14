@@ -57,7 +57,7 @@ class Run:
             with urlopen(request,timeout=310) as response:status=response.status;data=json.load(response)
         except HTTPError as exc:status=exc.code;data=json.load(exc)
         elapsed=round((time.perf_counter()-began)*1000)
-        self.report['requests'].append(dict(method=method,path=path,status=status,wall_ms=elapsed,response=data))
+        self.report['requests'].append(dict(method=method,path=path,status=status,wall_ms=elapsed,payload=payload,response=data))
         if limit and elapsed>limit*1000:self.report['failures'].append(f'{method} {path}: {elapsed} ms exceeds {limit}s')
         assert status==expected,(method,path,status,data)
         if status!=200:validate('ErrorResponse',data)

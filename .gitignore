@@ -13,3 +13,4 @@ coverage/
 # Local runtime and generated scenario snapshots
 tmp/
 data/qa/
+compose.http-qa.local.yaml

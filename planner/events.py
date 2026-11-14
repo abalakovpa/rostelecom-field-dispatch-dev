@@ -33,7 +33,7 @@ def apply_event(reference,day,matrix,previous,event,budget=6):
     day['now']=event['timestamp']
     if kind in ('VISIT_DELAYED','ORDER_TRANSFERRED'):
         target=next((s for r in plan['routes'] if r['staff_id']==event['staff_id'] for s in r['stops'] if s.get('order_id')==event['order_id']),None)
-        if not target or not stamp(target['start'])<=now<stamp(target['end']):raise EventError('VISIT_NOT_ACTIVE','Визит сейчас не выполняется.',409)
+        if not target or not stamp(target['start'])<=now<stamp(target['end']):raise EventError('VISIT_NOT_ACTIVE','Визит сейчас не выполняется.',422)
         end=event['expected_end'] if kind=='VISIT_DELAYED' else event['actual_end']
         if (kind=='VISIT_DELAYED' and stamp(end)<=stamp(target['end'])) or (kind=='ORDER_TRANSFERRED' and not stamp(target['start'])<=stamp(end)<=now):
             raise EventError('BAD_REQUEST','Некорректное новое время окончания визита.')
