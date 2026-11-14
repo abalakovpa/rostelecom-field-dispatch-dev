@@ -1,6 +1,7 @@
+import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {projectDay,planOverview,matchesOrderStatus,markerSummary} from '../web/dispatch-model.js';
+import {projectDay,planOverview,matchesOrderStatus,markerSummary,projectWarnings} from '../web/dispatch-model.js';
 const at=t=>`2026-10-12T${t}:00+05:00`;
 const stop=(type,start,end,extra={})=>({type,arrival:at(start),start:at(start),end:at(end),travel_sec:0,...extra});
 
@@ -38,4 +39,33 @@ test('map filters exclude stale plan records and terminal orders from active ris
  const marker=markerSummary(day.orders,view);assert.deepEqual(marker.counts,{risk:1,pgp:1,cancelled:1});
  assert.equal(marker.kind,'risk');assert.match(marker.text,/ПГП: 1/);
  assert.equal(markerSummary([{order_id:'C'}],view).kind,'cancelled');
+});
+
+test('incident metadata stays assigned, can carry risk, and drives the PGP map filter',()=>{
+ const day={date:'2026-10-12',model_now:at('10:00'),orders:['A','B','C'].map(order_id=>({order_id})),plan:{
+  routes:[{staff_id:'S',stops:[stop('VISIT','11:00','12:00',{order_id:'A'})]}],unassigned:[{order_id:'B'}],cancelled:[{order_id:'C'}],
+  incident_groups:[{group_id:'INC',access_node_id:'AN',order_ids:['A','B','C','missing'],detected_at:at('09:00'),action:'INDIVIDUAL_VISITS'}],
+  alerts:[{type:'LATE_RISK',status:'ACTIVE',order_id:'A'}]}};
+ const original=JSON.stringify(day);const view=projectDay(day);
+ assert.equal(view.status('A'),'assigned');assert.equal(view.counts.assigned,1);assert.equal(view.counts.pgp,2);assert.equal(view.counts.risk,1);
+ assert.equal(matchesOrderStatus(view,'A','pgp'),true);assert.equal(matchesOrderStatus(view,'C','pgp'),false);
+ assert.equal(markerSummary([{order_id:'B'}],view).kind,'pgp');
+ const warnings=projectWarnings(day);assert.equal(warnings.length,2);assert.equal(warnings[1].type,'INCIDENT_GROUP');assert.match(warnings[1].message,/2 нарядов/);
+ assert.equal(JSON.stringify(day),original);
+ day.model_now=at('13:00');day.plan.cancelled.push({order_id:'B'});
+ assert.equal(projectWarnings(day)[1].status,'RESOLVED');
+});
+test('an existing group alert is not duplicated by UI group projections',()=>{
+ const day={orders:[{order_id:'A'}],plan:{alerts:[{group_id:'G',type:'PGP_DETECTED',status:'ACTIVE'}],pgp_groups:[{group_id:'G',order_ids:['A']}]}};
+ assert.equal(projectWarnings(day).length,1);
+});
+
+test('captured Fastify UI response exposes incidents without double-counting visits',()=>{
+ const day=JSON.parse(readFileSync(new URL('../docs/examples/ui-day-incidents.json',import.meta.url),'utf8'));
+ const original=JSON.stringify(day),view=projectDay(day);
+ assert.equal(view.counts.pgp,3);assert.equal(view.counts.assigned,3);
+ assert.deepEqual(day.plan.pgp_groups,[]);
+ assert.equal(day.orders.filter(o=>matchesOrderStatus(view,o.order_id,'pgp')).length,3);
+ assert.equal(projectWarnings(day).filter(a=>a.type==='INCIDENT_GROUP'&&a.status==='ACTIVE').length,1);
+ assert.equal(JSON.stringify(day),original);
 });

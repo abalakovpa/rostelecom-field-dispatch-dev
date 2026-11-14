@@ -1,11 +1,11 @@
-import {createEventId} from './uuid.js';
-import {projectDay,planOverview,statusLabels,actionLabels,matchesOrderStatus,markerSummary} from './dispatch-model.js';
+import {time,fullTime,shiftTime} from './ui-format.js';
+import {createNavigation} from './navigation.js';
+import {projectDay,statusLabels,actionLabels,matchesOrderStatus,markerSummary} from './dispatch-model.js';
 import {createDispatcher} from './dispatcher-view.js';
 import {MapView} from './map-view.js';
 const $=id=>document.getElementById(id);
 const state={ref:null,day:null,tab:'orders',selected:null,request:0,markers:new Map(),geometryRequest:0,status:'all',view:null};
 const techColors={PON:'#df8b4e',FTTB:'#6d58ae',XDSL:'#548f8b',DOCSIS:'#bd7897'};
-const time=value=>new Intl.DateTimeFormat('ru-RU',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Yekaterinburg'}).format(new Date(value));
 const dateLabel=value=>new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'long',year:'numeric',timeZone:'Asia/Yekaterinburg'}).format(new Date(value+'T12:00:00+05:00'));
 function node(tag,className,text){const e=document.createElement(tag);if(className)e.className=className;if(text!==undefined)e.textContent=text;return e;}
 function error(message){$('error').textContent=message;$('error').hidden=!message;}
@@ -16,6 +16,7 @@ async function get(url){
   return body;
 }
 let map;
+const navigation=createNavigation(()=>map);
 function setupMap(){
   let failed=0;
   try{
@@ -78,6 +79,7 @@ function orderCard(order){
   const assignment=assigned(order.order_id);
   if(assignment)card.append(node('div','assignment',`${assignment.staff} · визит ${assignment.number} · ${time(assignment.stop.start)}`));
   const status=state.view.status(order.order_id);card.append(node('span',`status-tag status-${status}`,statusLabels[status]));
+  const group=state.view.groups.get(order.order_id);if(group&&group.kind==='incident'&&status!=='cancelled')card.append(node('span','status-tag status-pgp','ПГП · отдельный выезд'));
   const reason=state.view.unassigned.get(order.order_id);if(reason)card.append(node('div','reason-preview',reason.reason_text));
   if(state.view.risks.has(order.order_id))card.append(node('span','risk-badge','Риск опоздания'));
   card.addEventListener('click',()=>selectOrder(order));return card;
@@ -86,7 +88,7 @@ function staffCard(person){
   const card=node('button','order-card staff-card');const top=node('div','card-top');
   top.append(node('span','order-id',person.staff_id),node('span','tech-chip',person.profiles.map(p=>p==='LTP3'?'3ЛТП':'Инсталляция').join(' / ')));
   card.append(top,node('h3','',person.display_name||person.staff_id),node('div','card-work',`${person.technologies.join(' · ')}${person.height_permit?' · Допуск к высоте':''}`));
-  const bottom=node('div','card-bottom');bottom.append(node('span','time-tag',`${person.shift_start.slice(0,5)} — ${person.shift_end.slice(0,5)}`),node('span','',person.service_center_id));card.append(bottom);
+  const bottom=node('div','card-bottom');bottom.append(node('span','time-tag',`${shiftTime(state.day.date,person.shift_start)} — ${shiftTime(state.day.date,person.shift_end)}`),node('span','',person.service_center_id));card.append(bottom);
   const workload=state.view?.rows.find(r=>r.route.staff_id===person.staff_id);
   if(workload)card.append(node('div','staff-workload',`${workload.visits} визитов · работы ${Math.round(workload.workMin)} мин · дорога ${Math.round(workload.travelMin)} мин`));
   card.addEventListener('click',()=>{
@@ -94,17 +96,17 @@ function staffCard(person){
     const box=$('details');box.replaceChildren();box.hidden=false;
     const close=node('button','close','×');close.setAttribute('aria-label','Закрыть карточку');close.onclick=()=>{box.hidden=true;};
     box.append(close,node('div','detail-id',person.staff_id),node('h2','',person.display_name||person.staff_id),node('p','',person.technologies.join(' · ')),
-      detailRow('Сервисный центр',person.service_center_id),detailRow('Смена',`${person.shift_start.slice(0,5)}–${person.shift_end.slice(0,5)}`),
+      detailRow('Сервисный центр',person.service_center_id),detailRow('Смена',`${shiftTime(state.day.date,person.shift_start)}–${shiftTime(state.day.date,person.shift_end)}`),
       node('p','', 'Положение показано по закреплённому СЦ. Текущая GPS-позиция не поступала.'));
     if(center&&map)map.focus([center.lon,center.lat],14);
   });return card;
 }
 function detailRow(label,value){const row=node('div','detail-row');row.append(node('span','',label),node('span','',value));return row;}
 function selectOrder(order){
+  map?.closePopup();
   state.selected=order.order_id;render();
   const box=$('details');box.replaceChildren();box.hidden=false;
   const assignment=assigned(order.order_id);
-  const fullTime=value=>new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Yekaterinburg'}).format(new Date(value));
   const close=node('button','close','×');close.setAttribute('aria-label','Закрыть карточку');close.addEventListener('click',()=>{box.hidden=true;state.selected=null;render();});
   box.append(close,node('div','detail-id',order.order_id),node('h2','',order.address),node('p','',work(order).name),
     detailRow('Статус',statusLabels[state.view.status(order.order_id)]),
@@ -118,7 +120,7 @@ function selectOrder(order){
   if(assignment)box.append(detailRow('Исполнитель',assignment.staff),detailRow('Назначенный визит',`${fullTime(assignment.stop.start)}–${time(assignment.stop.end)}`));
   const reason=state.view.unassigned.get(order.order_id);
   if(reason)box.append(node('div','unassigned-detail',`${reason.reason_text} ${actionLabels[reason.suggested_action]||''}`));
-  const group=state.view.groups.get(order.order_id);if(group)box.append(node('div','unassigned-detail',`ПГП · ${group.group_id} · узел ${group.access_node_id} · ${group.order_ids.length} нарядов. ${actionLabels[group.action]||group.action}`));
+  const group=state.view.groups.get(order.order_id);if(group&&!state.view.cancelled.has(order.order_id))box.append(node('div','unassigned-detail',`ПГП · ${group.group_id} · узел ${group.access_node_id} · ${group.order_ids.length} нарядов. ${actionLabels[group.action]||group.action}`));
   const cancelled=state.view.cancelled.get(order.order_id);if(cancelled)box.append(detailRow('Отменён в',fullTime(cancelled.cancelled_at)),node('p','status-tag status-cancelled','Отменённый наряд не требует выезда'));
   for(const alert of state.view.riskAlerts.get(order.order_id)||[]){
     const facts=node('div','unassigned-detail risk-detail');facts.append(node('strong','','Риск опоздания'),node('p','',alert.message));
@@ -132,18 +134,6 @@ function selectOrder(order){
 }
 function render(){
   if(state.ref&&state.day)state.view=projectDay(state.day,state.ref.staff);
-  let daily=document.getElementById('daily-order-counts');
-  if(!daily){daily=node('div','statusbar');daily.id='daily-order-counts';document.querySelector('.statusbar').after(daily);}
-  const dailyCounts=state.view?.counts;
-  daily.textContent=state.day?`Наряды за ${state.day.date}: всего ${dailyCounts?.all ?? state.day.orders.length} · назначено ${dailyCounts?.assigned ?? 0} · не назначено ${dailyCounts?.unassigned ?? 0}`+(state.day.plan?'':` · ожидают расчёта ${state.day.orders.length}`):'Выберите день';
-
-  let summary=document.getElementById('automatic-policy-summary');
-  if(!summary){summary=node('div','statusbar');summary.id='automatic-policy-summary';document.querySelector('.statusbar').after(summary);}
-  const plan=state.day?.plan;
-  const changes=plan?.automatic_reschedules||[],incidents=plan?.incident_groups||[],transfers=plan?.transferred_orders||[];
-  summary.textContent=`Автоматические переносы: ${changes.length}. На другие дни: ${transfers.length}. Группы аварий с выездами: ${incidents.length}. `+
-    transfers.map(c=>` → `).join('; ')+ ' '+changes.slice(-3).map(c=>`${c.order_id}: ${time(c.old_slot.start)} → ${time(c.slot.start)}`).join('; ')+
-    (incidents.length?' · '+incidents.map(g=>`${g.group_id}: ${g.order_ids.length} заявок`).join('; '):'');
   if(!state.ref||!state.day)return;
   state.view=projectDay(state.day,state.ref.staff);
   const orders=filteredOrders();const staff=filteredStaff();const rows=state.tab==='orders'?orders:staff;
@@ -167,17 +157,13 @@ async function loadDay(){
   const seq=++state.request;error('');$('refresh').disabled=true;
   $('list').replaceChildren(node('div','empty','Загружаем данные дня…'));state.day=null;state.selected=null;$('details').hidden=true;
   state.view=null;state.geometryRequest++;map?.clearRoute();dispatcher.loading();
-  map?.clearMarkers('orders');$('total').textContent='—';$('repeat-count').textContent='—';
+  map?.clearMarkers('orders');$('total').textContent='—';
   try {
     const day=await get('/api/ui/days/'+encodeURIComponent($('day').value));if(seq!==state.request)return;
-    state.day=day;$('total').textContent=day.orders.length;$('repeat-count').textContent=day.orders.filter(o=>o.is_repeat).length;
+    state.day=day;$('total').textContent=day.orders.length;
     if(!day.plan)state.status='all';
-    $('model-time').textContent=`Модельное время ${time(day.model_now)} · UTC+5`;
-    $('plan-status').textContent=day.plan?`План · версия ${day.plan.plan_version}`:'План ещё не построен';
-    const overview=planOverview(day.plan);
-    $('plan-note').textContent=day.plan?`Назначено ${overview.visits} · Не назначено ${overview.unassigned} · ПГП ${overview.pgp}`:'Готов к первому расчёту';
+    $('model-time').textContent=`Модельное время ${time(day.model_now)} · МСК`;
     updateRouteOptions();
-    updateEventExample();
     render();dispatcher.render();map?.showCity();
   }catch(e){if(seq===state.request){error(e.message);$('list').replaceChildren(node('div','empty','Данные не загружены. Нажмите «Обновить данные» после восстановления подключения.'));}}
   finally{if(seq===state.request)$('refresh').disabled=false;}
@@ -226,9 +212,9 @@ buildButton.onclick=async()=>{
   }catch(e){error(e.message);}finally{buildButton.disabled=false;$('day').disabled=false;buildButton.textContent='Обновить план';}
 };
 const dispatcher=createDispatcher({state,node,time,
-  onStatus(status){state.status=status;state.geometryRequest++;map?.clearRoute();$('route-choice').value='';state.selected=null;$('details').hidden=true;setTab('orders');dispatcher.syncStatus();fit();},
-  focusOrder(id){const order=state.day?.orders.find(o=>o.order_id===id);if(!order)return;state.status='all';for(const key of ['technology','profile'])$(key).value='';$('search').value=id;setTab('orders');dispatcher.syncStatus();selectOrder(order);document.querySelector('.workspace').scrollIntoView({behavior:'smooth',block:'start'});},
-  chooseRoute(id){routeChoice.value=id;dispatcher.highlight();if(routeChoice.value)routeChoice.onchange();document.querySelector('.workspace').scrollIntoView({behavior:'smooth',block:'start'});}
+  onStatus(status){navigation.show('map');state.status=status;state.geometryRequest++;map?.clearRoute();$('route-choice').value='';state.selected=null;$('details').hidden=true;setTab('orders');dispatcher.syncStatus();fit();},
+  focusOrder(id){const order=state.day?.orders.find(o=>o.order_id===id);if(!order)return;navigation.show('map');state.status='all';for(const key of ['technology','profile'])$(key).value='';$('search').value=id;setTab('orders');dispatcher.syncStatus();selectOrder(order);document.querySelector('.workspace').scrollIntoView({behavior:'smooth',block:'start'});},
+  chooseRoute(id){navigation.show('map');routeChoice.value=id;dispatcher.highlight();if(routeChoice.value)routeChoice.onchange();document.querySelector('.workspace').scrollIntoView({behavior:'smooth',block:'start'});}
 });
 routeChoice.addEventListener('change',()=>dispatcher.highlight());
 dispatcher.render();
@@ -252,50 +238,3 @@ routeChoice.onchange=async()=>{
   }catch(e){if(seq===state.geometryRequest)error(e.message);}
 };
 updateRouteOptions();
-
-const eventsPanel=node('details','events-panel');eventsPanel.append(node('summary','','События и перепланирование'));
-eventsPanel.append(node('p','','Событие изменяет модельное время и создаёт новую версию плана. Уже начатые визиты сохраняются; первоначальный расчёт после события закрывается.'));
-const eventType=node('select');eventType.setAttribute('aria-label','Тип события');
-for(const [code,label] of [['TIME_TICK','Ход времени'],['ORDER_CANCELLED','Отмена визита'],['STAFF_UNAVAILABLE','Недоступность сотрудника'],['VISIT_DELAYED','Задержка работ'],['ORDER_TRANSFERRED','Передача в подразделение'],['NEW_ORDER','Новый наряд']]){const option=node('option','',label);option.value=code;eventType.append(option);}
-const eventBody=node('textarea');eventBody.setAttribute('aria-label','Параметры события JSON');eventBody.rows=11;eventBody.spellcheck=false;
-const eventSend=node('button','build-button','Применить событие');const eventStatus=node('span','event-status');
-eventsPanel.append(eventType,eventBody,eventSend,eventStatus);document.querySelector('.statusbar').after(eventsPanel);
-document.querySelector('.dispatch-results').after(eventsPanel);
-function eventIso(value){return new Date(new Date(value).getTime()+5*3600000).toISOString().slice(0,19)+'+05:00';}
-function updateEventExample(){
-  if(!state.day){eventSend.disabled=true;return;}
-  eventSend.disabled=!state.day.plan;
-  const now=new Date(state.day.model_now);const future=new Date(now.getTime()+15*60000);
-  const body={event_id:'EV-'+createEventId(),type:eventType.value,timestamp:eventIso(future)};
-  const assignedVisits=(state.day.plan?.routes||[]).flatMap(r=>r.stops.filter(s=>s.type==='VISIT').map(s=>({staff:r.staff_id,stop:s})));
-  const next=assignedVisits.find(v=>new Date(v.stop.end)>now);const order=state.day.orders.find(o=>new Date(o.slot_start)>future)||state.day.orders[0];
-  if(body.type==='ORDER_CANCELLED'){body.order_id=order?.order_id;body.reason='CUSTOMER_REQUEST';}
-  if(body.type==='STAFF_UNAVAILABLE'){body.staff_id=next?.staff||state.ref?.staff[0]?.staff_id;body.reason='VEHICLE_BREAKDOWN';body.until=eventIso(new Date(future.getTime()+2*3600000));}
-  if(['VISIT_DELAYED','ORDER_TRANSFERRED'].includes(body.type)&&next){
-    body.staff_id=next.staff;body.order_id=next.stop.order_id;
-    const moment=new Date(Math.max(now.getTime(),new Date(next.stop.start).getTime())+60000);body.timestamp=eventIso(moment);
-    if(body.type==='VISIT_DELAYED')body.expected_end=eventIso(new Date(new Date(next.stop.end).getTime()+30*60000));
-    else {body.actual_end=body.timestamp;body.transferred_to='STATION_EQUIPMENT';}
-  }
-  if(body.type==='NEW_ORDER'&&order){
-    const o={...order};delete o.slot_start;delete o.slot_end;
-    o.slot={start:order.slot_start,end:order.slot_end};o.order_id=`ORD-${$('day').value.replaceAll('-','')}-${9000+Math.floor(Math.random()*999)}`;
-    o.registered_at=body.timestamp;o.is_repeat=false;o.previous_order_id=null;body.order=o;
-  }
-  eventBody.value=JSON.stringify(body,null,2);
-}
-eventType.onchange=updateEventExample;
-eventSend.onclick=async()=>{
-  let payload;try{payload=JSON.parse(eventBody.value);}catch{eventStatus.textContent='Проверьте синтаксис JSON.';return;}
-  eventSend.disabled=true;$('day').disabled=true;eventStatus.textContent='Перепланирование…';
-  try{
-    const response=await fetch(`/api/v1/days/${$('day').value}/events`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-    const result=await response.json();if(!response.ok)throw new Error(result.error?.message||'Ошибка события.');
-    await bootstrap();eventStatus.textContent=`${result.duplicate?'Повтор уже принятого события':'Событие принято'} · версия ${result.plan_version} · ${result.processing_ms} мс`;
-  }catch(e){eventStatus.textContent=e.message;}finally{eventSend.disabled=!state.day?.plan;$('day').disabled=false;}
-};
-
-
-
-
-

@@ -48,6 +48,7 @@ export class MapView{
     this.groups[group].push(marker);return marker;
   }
   closePopup(){this.popup?.remove();this.popup=null;this.popupGroup=null;}
+  resize(){this.map.resize();}
   focus(position,zoom){this.map.easeTo({center:position,zoom,duration:600});}
   fitPoints(points,maxZoom=14,padding=45){
     const bounds=boundsOf(points);if(bounds)this.map.fitBounds(bounds,{padding,maxZoom,duration:350});

@@ -105,3 +105,38 @@ class SelectedEmployeeTest(unittest.TestCase):
         self.assertTrue(updated['_order_updates'])
         self.assertTrue(any(a['type']=='LATE_RISK' for a in updated['alerts']))
         self.assertTrue(all(r['staff_id']=='ST-001' for r in updated['routes'] if any(s['type']=='VISIT' for s in r['stops'])))
+
+class RiskUiMetadataTest(unittest.TestCase):
+    def test_warning_deadline_uses_original_slot_after_automatic_move(self):
+        from policies import enrich_risk_alerts
+        order={'order_id':'O','slot':{'start':at('14:00:00')}}
+        result={'automatic_reschedules':[{'order_id':'O','old_slot':{'start':at('11:00:00')},'changed_at':at('10:20:00')}],
+                'alerts':[{'type':'LATE_RISK','order_id':'O','created_at':at('10:20:00'),'status':'RESOLVED'}]}
+        enrich_risk_alerts(result,[order]);alert=result['alerts'][0]
+        self.assertEqual(alert['warning_deadline'],at('10:30:00'));self.assertTrue(alert['timely'])
+        self.assertNotIn('forecast_available',alert)
+        order['slot']['start']=at('16:00:00');enrich_risk_alerts(result,[order])
+        self.assertEqual(alert['warning_deadline'],at('10:30:00'))
+    def test_backend_delay_supplies_ui_metadata_and_closes_auto_resolved_risks(self):
+        reference,matrix,day=sample();day['orders']=day['orders'][:2]
+        initial=calculate(dict(reference=reference,matrix=matrix,day=day,time_limit_sec=1))
+        event={'event_id':'UI-DELAY','type':'VISIT_DELAYED','timestamp':at('09:30:00'),'staff_id':'ST-001','order_id':day['orders'][0]['order_id'],'expected_end':at('12:00:00')}
+        day['now']=event['timestamp']
+        result=calculate(dict(reference=reference,matrix=matrix,day=day,previous_plan=initial,event=event,time_limit_sec=2))
+        risks=[a for a in result['alerts'] if a['type']=='LATE_RISK'];self.assertTrue(risks)
+        for a in risks:
+            self.assertIn('warning_deadline',a);self.assertIn('timely',a);self.assertIn('forecast_at',a)
+        moved={c['order_id'] for c in result['automatic_reschedules']}
+        self.assertFalse(any(a['status']=='ACTIVE' and a['order_id'] in moved for a in risks))
+
+    def test_cancelled_order_closes_prior_risk_without_mutating_previous_plan(self):
+        reference,matrix,day=sample();day['orders']=day['orders'][:2]
+        previous=calculate(dict(reference=reference,matrix=matrix,day=day,time_limit_sec=1))
+        order_id=day['orders'][1]['order_id']
+        previous['alerts'].append({'alert_id':'OLD-RISK','type':'LATE_RISK','status':'ACTIVE','order_id':order_id,'created_at':at('08:35:00'),'suggested_action':'RESCHEDULE'})
+        original=deepcopy(previous);day['now']=at('08:40:00')
+        event={'event_id':'CANCEL-RISK','type':'ORDER_CANCELLED','order_id':order_id,'timestamp':day['now'],'reason':'NOT_CONFIRMED'}
+        result=calculate(dict(reference=reference,matrix=matrix,day=day,previous_plan=previous,event=event,time_limit_sec=1))
+        alert=next(a for a in result['alerts'] if a['alert_id']=='OLD-RISK')
+        self.assertEqual(alert['status'],'RESOLVED');self.assertEqual(alert['resolution'],'ORDER_CANCELLED')
+        self.assertEqual(previous,original)

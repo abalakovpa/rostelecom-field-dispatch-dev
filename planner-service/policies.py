@@ -9,6 +9,25 @@ from time import monotonic
 from planner_openapi import plan_openapi
 
 def stamp(value): return datetime.fromisoformat(value)
+
+def enrich_risk_alerts(result, orders):
+    """UI metadata uses the original promised slot, even after an auto move.
+
+    Preserve timestamps of previously issued warnings. Missing forecast data is
+    unknown, not proof that an employee is unavailable.
+    """
+    by_id={o['order_id']:o for o in orders}
+    for alert in result.get('alerts',[]):
+        if alert['type']!='LATE_RISK':continue
+        order=by_id.get(alert.get('order_id'))
+        if not order:continue
+        change=next((c for c in result.get('automatic_reschedules',[])
+            if c['order_id']==alert['order_id'] and c.get('changed_at')==alert['created_at']),None)
+        slot=change['old_slot'] if change else order['slot']
+        alert.setdefault('warning_deadline',(stamp(slot['start'])-timedelta(minutes=30)).isoformat())
+        alert.setdefault('timely',stamp(alert['created_at'])<=stamp(alert['warning_deadline']))
+        alert.setdefault('forecast_at',alert['created_at'])
+        if alert.get('forecast_start') is not None:alert.setdefault('forecast_available',True)
 def groups_for(reference,day,previous,cancelled):
     groups=deepcopy((previous or {}).get('incident_groups',[]))
     eligible={w['code'] for w in reference['work_types'] if w.get('pgp_relevant')}
@@ -31,6 +50,7 @@ def groups_for(reference,day,previous,cancelled):
 
 def calculate(request):
     reference=request['reference'];matrix=request['matrix'];day=deepcopy(request['day'])
+    original_orders=deepcopy(day['orders'])
     previous=request.get('previous_plan');event=request.get('event')
     budget=max(.05,float(request.get('time_limit_sec',7 if event else 25)))
     deadline=monotonic()+budget
@@ -41,6 +61,7 @@ def calculate(request):
     def solve(candidate,remaining):
         return plan_openapi(reference,matrix,candidate,previous=previous,event=event,cancelled=cancelled,pgp_groups=(),time_limit_sec=max(.01,remaining))
     result=solve(day,budget*.4)
+    risk_context={a['order_id']:deepcopy(a) for a in result['alerts'] if a['type']=='LATE_RISK' and a.get('order_id')}
     changes=[]
     future_transfers=[]
     calendar=deepcopy(request.get('calendar',{}))
@@ -109,6 +130,21 @@ def calculate(request):
     result['incident_groups']=groups_for(reference,day,previous,cancelled)
     result['_order_updates']=changes
     result['automatic_reschedules']=deepcopy((previous or {}).get('automatic_reschedules',[]))+[{**c,'changed_at':day['now'],'event_id':(event or {}).get('event_id','INITIAL')} for c in changes]
+    # plan_openapi may reuse historical alert objects from previous_plan.
+    # Enrichment and closing a risk must not rewrite a preceding version.
+    result['alerts']=deepcopy(result['alerts'])
+    moved={c['order_id']:c for c in [*changes,*future_transfers]}
+    cancelled_ids={c['order_id'] for c in cancelled}
+    for alert in result['alerts']:
+        if alert['type']=='LATE_RISK' and alert['status']=='ACTIVE' and alert.get('order_id') in moved:
+            alert.update(status='RESOLVED',resolved_at=day['now'],applied=True,
+                resolution='AUTO_RESCHEDULE',suggested_action='RESCHEDULE',proposed_slot=moved[alert['order_id']]['slot'])
+        elif alert['type']=='LATE_RISK' and alert['status']=='ACTIVE' and alert.get('order_id') in cancelled_ids:
+            alert.update(status='RESOLVED',resolved_at=day['now'],applied=False,
+                resolution='ORDER_CANCELLED',suggested_action='NONE')
     for change in changes:
-        result['alerts'].append({'alert_id':f"AUTO-{(event or {}).get('event_id','INITIAL')}-{change['order_id']}",'created_at':day['now'],'type':'LATE_RISK','status':'RESOLVED','order_id':change['order_id'],'suggested_action':'RESCHEDULE','proposed_slot':change['slot'],'applied':True,'resolved_at':day['now'],'message':'Система автоматически назначила новое время визита'})
+        forecast={k:v for k,v in risk_context.get(change['order_id'],{}).items()
+            if k in ('forecast_start','forecast_available','lateness_min','forecast_at','staff_id')}
+        result['alerts'].append({**forecast,'alert_id':f"AUTO-{(event or {}).get('event_id','INITIAL')}-{change['order_id']}",'created_at':day['now'],'type':'LATE_RISK','status':'RESOLVED','order_id':change['order_id'],'suggested_action':'RESCHEDULE','proposed_slot':change['slot'],'applied':True,'resolved_at':day['now'],'message':'Система автоматически назначила новое время визита'})
+    enrich_risk_alerts(result,original_orders)
     return result

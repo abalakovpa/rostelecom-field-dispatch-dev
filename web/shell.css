@@ -1,0 +1,78 @@
+:root{--purple:#7700ff;--orange:#ff4f12;--ink:#101828;--muted:#717887;color:var(--ink);background:#f6f7fb}
+body{color:var(--ink)}
+.rail{display:flex;width:76px;padding:28px 16px 20px;z-index:2200;overflow:hidden;box-shadow:4px 0 24px #10182805}
+.rail:hover:not(.dismissed),.rail:has(:focus-visible),.rail.expanded{width:258px;box-shadow:6px 0 28px #10182812}
+.brand{width:22px;height:38px;flex:none;overflow:hidden;cursor:default;display:block;letter-spacing:normal;margin-left:7px}
+.brand img{display:block;width:162px;height:34px;max-width:none}
+.rail:hover:not(.dismissed) .brand,.rail:has(:focus-visible) .brand,.rail.expanded .brand{width:178px}
+.rail-label{margin:42px 10px 15px;white-space:nowrap;opacity:0;transition:opacity .15s}
+.rail:hover:not(.dismissed) .rail-label,.rail:has(:focus-visible) .rail-label,.rail.expanded .rail-label{opacity:1}
+.workspace-nav{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;min-width:0}
+.nav-item{position:relative;width:100%;min-width:0;height:60px;min-height:60px;overflow:hidden;background:transparent;text-align:left;padding:12px;gap:12px;color:#667085;font-weight:650}
+.nav-item:hover{background:#f7f2ff;color:var(--purple)}
+.nav-item.active{background:#f1e8ff;color:var(--purple)}
+.nav-item .nav-icon{font-size:21px;line-height:24px;flex:0 0 20px;text-align:center}
+.nav-item .nav-label{display:block;flex:0 0 170px;width:170px;font-size:12px;line-height:1.5;white-space:normal;opacity:0;transition:opacity .15s;min-width:0}
+.rail:hover:not(.dismissed) .nav-label,.rail:has(:focus-visible) .nav-label,.rail.expanded .nav-label{display:block;opacity:1}
+.nav-item .warning-indicator{position:absolute;right:4px;top:24px;margin:0;width:8px;height:8px;border:2px solid #fff;border-radius:50%;box-sizing:content-box;background:#98a2b3}
+.nav-item .warning-indicator.clear{background:#24a36b}.nav-item .warning-indicator.alert{background:#dc3545}
+.rail:hover:not(.dismissed) .warning-indicator,.rail:has(:focus-visible) .warning-indicator,.rail.expanded .warning-indicator{right:9px;top:24px}
+.rail-bottom{margin-top:auto;padding-top:24px;align-items:center;min-width:40px}
+.rail-bottom .city-dot{flex:0 0 7px;margin-left:18px}
+.city-selection{opacity:0;min-width:0;transition:opacity .15s}
+.rail:hover:not(.dismissed) .city-selection,.rail:has(:focus-visible) .city-selection,.rail.expanded .city-selection{opacity:1}
+.city-selection label{display:block;font-size:9px;color:var(--muted);margin-bottom:4px}
+.city-selection select{width:178px;padding:8px 5px;background:#fff;border:0;border-bottom:1px solid #e6e8ef;border-radius:0;font-size:12px;color:var(--ink);font-weight:650}
+.city-selection small{white-space:nowrap;font-size:9px;margin-top:7px}
+main{margin-left:76px;width:calc(100% - 76px);max-width:none;padding:0 30px 28px}
+.topbar{height:70px}.mobile-brand,.nav-toggle{display:none}
+.nav-backdrop{position:fixed;inset:0;background:#10182855;z-index:2100}
+.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+.build-button{background:var(--purple);font-size:12px;padding:12px 18px}.build-button:hover{background:#6500d9}
+.status-filter[aria-pressed=true]{background:#f3eaff;border-color:#b680ff;color:#6600dc}
+.status-filter[aria-pressed=true] strong{color:#6600dc}
+.square-button:hover{color:var(--purple);background:#f6f0ff}
+.orange{color:var(--orange)!important;background:#fff0e9}.violet{color:var(--purple)!important;background:#f2eaff}
+.avatar{color:var(--purple);background:#f1e8ff}.depot-icon,.legend-depot{background:var(--purple)}
+.popup-action,.attention-card button{background:#f3eaff;color:#6600dc}
+.order-card.chosen{background:#f7f1ff;border-color:#d5b4ff}.assignment{color:#6600dc}
+.height-tag{color:#8251ad}.list-heading button{color:#6600dc}
+.dispatch-section{margin-top:0}.dispatch-results{margin-top:0}
+.gantt-VISIT{background:#7700ff}.gantt-RESTOCK{background:#ffcfb9;color:#92320e}
+.gantt-block.selected-visit,.gantt-block:focus-visible{outline-color:#ff4f12}
+.order-icon.focused{outline-color:#7700ff40}
+/* Marker z-index belongs to the map only; detail cards are above the entire map. */
+.map-panel{isolation:isolate}#map{position:relative;z-index:0}
+.details{z-index:1400}.map-legend,.map-view-controls,.map-heading{z-index:10}
+.maplibregl-popup{z-index:1200}.maplibregl-ctrl-attrib{font-size:9px}
+.details .close{min-width:32px;min-height:32px;cursor:pointer}
+button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{outline-color:#a45aff}
+@media(min-width:1600px){main{padding-left:40px;padding-right:40px}}
+@media(max-width:1150px){main{padding:0 18px 22px}.rail{padding:24px 16px 20px}.metrics small{font-size:8px}}
+@media(max-width:850px){
+ main{margin-left:0;width:100%;padding:0 15px 24px}
+ .rail{display:flex;transform:translateX(-100%);width:258px;padding:25px 16px 20px}
+ .rail.expanded{transform:translateX(0)}
+ .rail .brand{width:178px}.rail .rail-label,.rail .nav-label,.rail .city-selection{opacity:1}.rail .nav-label{display:block}
+ .rail .warning-indicator{right:9px;top:24px}
+ .nav-toggle{display:grid;place-items:center;width:36px;height:36px;background:#f1e8ff;color:var(--purple);border-radius:8px;font-size:20px;flex:none}
+ .mobile-brand{display:block}.mobile-brand img{display:block;width:145px;height:auto}
+ .topbar{height:68px;gap:12px}.breadcrumbs{display:none}.source{font-size:9px}.avatar{display:none}
+ .heading{margin-top:22px}.heading h1{font-size:24px}
+}
+@media(max-width:600px){
+ .metrics{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+ .metrics article{padding:12px 9px}.metrics article span{font-size:9px}.metrics strong{font-size:25px}
+ .metrics .metric-icon{display:none}.source{max-width:130px}
+ .heading h1{font-size:23px}.heading p{line-height:1.7}
+ .plan-controls{gap:8px}.plan-controls select{min-width:0;flex:1;max-width:100%}
+ .dispatch-statuses{gap:6px}.status-filter{padding:9px 10px}
+ .map-panel{height:430px}.details{inset:65px 10px 38px;width:auto;max-height:none;padding:15px;border:1px solid #e5e7ef}
+ .details h2{font-size:14px}.details .detail-row{font-size:11px}.details p{font-size:11px}
+ .map-legend{left:10px;right:45px;bottom:20px;max-width:none;gap:7px;font-size:8px}
+ .map-heading{max-width:52%;padding:9px 10px}.map-heading-divider,#map-count{display:none}
+ .map-view-controls{right:10px;top:10px;gap:5px}.map-view-controls .fit-button{padding:8px 10px}
+ .dispatch-heading{padding:16px 13px}.gantt-controls{flex-wrap:wrap;min-width:0}
+ .dispatch-heading input{max-width:100%}.gantt-label{padding:12px}.attention-list{padding:12px}
+}
+@media(prefers-reduced-motion:reduce){.rail,.rail-label,.nav-label,.city-selection{transition:none}}

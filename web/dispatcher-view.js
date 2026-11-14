@@ -1,18 +1,19 @@
-import {projectDay,statusLabels,actionLabels} from './dispatch-model.js';
+import {warningIndicator} from './ui-format.js';
+import {projectDay,projectWarnings,statusLabels,actionLabels} from './dispatch-model.js';
 export function createDispatcher({state,node,time,focusOrder,chooseRoute,onStatus}){
  const statuses=node('div','dispatch-statuses');statuses.setAttribute('aria-label','Статусы нарядов');document.querySelector('.workspace').before(statuses);
  const statusSelect=node('select');statusSelect.id='order-status';statusSelect.setAttribute('aria-label','Статус наряда');statusSelect.style.cssText='width:100%;margin-top:9px';
  for(const [key,label] of [['all','Все статусы'],['risk','Риск опоздания'],['assigned','Все назначенные'],['active','В работе по плану'],['completed','Завершены по плану'],['unassigned','Не назначены'],['pgp','ПГП'],['cancelled','Отменены']]){const o=node('option','',label);o.value=key;statusSelect.append(o);}
  document.querySelector('.list-heading').before(statusSelect);statusSelect.onchange=()=>onStatus(statusSelect.value);
- const root=node('div','dispatch-results');document.querySelector('.statusbar').after(root);
- const gantt=node('section','dispatch-section');gantt.setAttribute('aria-label','Диаграмма Ганта');
- const heading=node('div','dispatch-heading');const title=node('div');title.append(node('h2','','План смены по времени'),node('p','','Работы, переезды и перерывы · Екатеринбург, UTC+5'));
+ const root=node('div','dispatch-results');document.querySelector('#map-view').after(root);
+ const gantt=node('section','dispatch-section');gantt.setAttribute('aria-label','Диаграмма Ганта');gantt.id='timeline-view';gantt.dataset.panel='timeline';gantt.hidden=true;
+ const heading=node('div','dispatch-heading');const title=node('div');title.append(node('h2','','План смены по времени'),node('p','','Работы, переезды и перерывы · московское время, UTC+3'));
  const controls=node('div','gantt-controls');const find=node('input');find.type='search';find.placeholder='Найти сотрудника';find.setAttribute('aria-label','Поиск сотрудника в Ганте');find.style.cssText='border:1px solid #e1e7ef;border-radius:7px;padding:8px 10px;font-size:11px';
  const used=node('label','attention-history');const usedCheck=node('input');usedCheck.type='checkbox';used.append(usedCheck,node('span','','Только с визитами'));controls.append(find,used);heading.append(title,controls);gantt.append(heading);
  const legend=node('div','gantt-legend');const types={VISIT:'Работы',TRAVEL:'Дорога',WAIT:'Ожидание',BREAK:'Обед',RESTOCK:'Пополнение АО'};
  for(const [type,label]of Object.entries(types)){const item=node('span');item.append(node('i',`gantt-${type}`),node('span','',label));legend.append(item);}
- gantt.append(legend);const timeline=node('div','gantt-scroll');timeline.id='gantt';const summary=node('div','gantt-summary');gantt.append(timeline,summary,node('div','gantt-note','Шкала показывает исполнение по плану, а не подтверждённые фактические отметки. Нажмите визит, чтобы открыть наряд на карте.'));
- const attention=node('div','attention-grid');const warningPanel=node('section','dispatch-section attention-column');const warningHead=node('div','dispatch-heading');const warningTitle=node('div');warningTitle.append(node('h2','','Предупреждения'),node('p','','Сохранённые сигналы текущей версии плана'));
+ gantt.append(legend);const timeline=node('div','gantt-scroll');timeline.id='gantt';gantt.append(timeline);
+ const attention=node('div','attention-grid');attention.id='warnings-view';attention.dataset.panel='warnings';attention.hidden=true;const warningPanel=node('section','dispatch-section attention-column');const warningHead=node('div','dispatch-heading');const warningTitle=node('div');warningTitle.append(node('h2','','Предупреждения'),node('p','','Сохранённые сигналы текущей версии плана'));
  const history=node('label','attention-history');const historyCheck=node('input');historyCheck.type='checkbox';history.append(historyCheck,node('span','','Показать закрытые'));warningHead.append(warningTitle,history);warningPanel.append(warningHead);const warnings=node('div','attention-list');warnings.id='warnings';warningPanel.append(warnings);
  attention.append(warningPanel);root.append(gantt,attention);
  let view=null;
@@ -25,9 +26,9 @@ export function createDispatcher({state,node,time,focusOrder,chooseRoute,onStatu
   }syncStatus();
  }
  function renderTimeline(){
-  if(!state.day?.plan){empty(timeline,'Сначала рассчитайте план выбранного дня. Здесь появятся маршруты сотрудников по времени.');summary.textContent='';return;}
+  if(!state.day?.plan){empty(timeline,'Сначала рассчитайте план выбранного дня. Здесь появятся маршруты сотрудников по времени.');return;}
   let rows=view.rows;const query=find.value.trim().toLowerCase();rows=rows.filter(r=>(!usedCheck.checked||r.visits)&&(!query||[r.route.staff_id,r.person?.display_name||'',r.route.service_center_id].some(s=>s.toLowerCase().includes(query))));
-  if(!rows.length){empty(timeline,'Сотрудники по выбранным фильтрам не найдены.');summary.textContent='';return;}
+  if(!rows.length){empty(timeline,'Сотрудники по выбранным фильтрам не найдены.');return;}
   const all=view.rows;const lo=Math.floor(Math.min(...all.map(r=>r.shiftStart))/3600000)*3600000,hi=Math.ceil(Math.max(...all.map(r=>r.shiftEnd))/3600000)*3600000;const span=hi-lo;const pct=t=>Math.max(0,Math.min(100,(t-lo)/span*100));
   const grid=node('div','gantt-grid');grid.style.setProperty('--hour-width',`${3600000/span*100}%`);
   const head=node('div','gantt-head');head.append(node('div','gantt-label','Сотрудник / загрузка'));const hours=node('div','gantt-hours');
@@ -46,13 +47,15 @@ export function createDispatcher({state,node,time,focusOrder,chooseRoute,onStatu
    if(now>=lo&&now<=hi){const marker=node('div','gantt-now');marker.style.left=pct(now)+'%';marker.title='Модельное время '+time(now);track.append(marker);}
    line.append(employee,track);grid.append(line);
   }
-  timeline.replaceChildren(grid);summary.textContent=`Показано ${rows.length} из ${all.length} сотрудников · работы ${Math.round(rows.reduce((s,r)=>s+r.workMin,0))} мин · дорога ${Math.round(rows.reduce((s,r)=>s+r.travelMin,0))} мин · модельное время ${time(state.day.model_now)}`;highlight();
+  timeline.replaceChildren(grid);highlight();
  }
  function renderAttention(){
-  const plan=state.day?.plan;if(!plan){empty(warnings,'Предупреждения появятся после расчёта и обработки событий.');return;}
-  const list=plan.alerts.filter(a=>historyCheck.checked||a.status==='ACTIVE');warnings.replaceChildren();
-  if(!list.length)empty(warnings,plan.alerts.length?'Активных предупреждений нет. Включите «Показать закрытые» для истории.':'По известным событиям и текущей матрице предупреждений нет. Неизвестные будущие задержки и пробки прогнозом не учитываются.');
-  for(const a of list){const card=node('article','attention-card');const head=node('header');head.append(node('strong','',({LATE_RISK:'Риск опоздания',PGP_DETECTED:'Выявлена ПГП',UNASSIGNED:'Неназначенный наряд'})[a.type]||a.type),node('span','',a.status==='ACTIVE'?'Активно':'Закрыто'));card.append(head,node('p','',a.message),node('div','attention-action',a.type==='LATE_RISK'&&a.status==='RESOLVED'?'Риск снят — дополнительных действий не требуется':actionLabels[a.suggested_action]||a.suggested_action),node('p','',`Создано ${time(a.created_at)}${a.staff_id?' · '+a.staff_id:''}${a.applied?' · действие применено':''}`));
+  const plan=state.day?.plan;const alerts=projectWarnings(state.day);const signal=warningIndicator(plan,alerts);const indicator=document.getElementById('warning-indicator');
+  indicator.className='warning-indicator '+signal.state;indicator.setAttribute('aria-label',signal.label);indicator.title=signal.label;
+  if(!plan){empty(warnings,'Предупреждения появятся после расчёта и обработки событий.');return;}
+  const list=alerts.filter(a=>historyCheck.checked||a.status==='ACTIVE');warnings.replaceChildren();
+  if(!list.length)empty(warnings,alerts.length?'Активных предупреждений нет. Включите «Показать закрытые» для истории.':'По известным событиям и текущей матрице предупреждений нет. Неизвестные будущие задержки и пробки прогнозом не учитываются.');
+  for(const a of list){const card=node('article','attention-card');const head=node('header');head.append(node('strong','',({LATE_RISK:'Риск опоздания',PGP_DETECTED:'Выявлена ПГП',INCIDENT_GROUP:'Общая авария (ПГП)',UNASSIGNED:'Неназначенный наряд'})[a.type]||a.type),node('span','',a.status==='ACTIVE'?'Активно':'Закрыто'));card.append(head,node('p','',a.message),node('div','attention-action',a.type==='LATE_RISK'&&a.status==='RESOLVED'?'Риск снят — дополнительных действий не требуется':actionLabels[a.suggested_action]||a.suggested_action),node('p','',`Создано ${time(a.created_at)}${a.staff_id?' · '+a.staff_id:''}${a.applied?' · действие применено':''}`));
    if(a.type==='LATE_RISK'){
     const facts=node('div','forecast-facts');
     const fact=(label,value)=>{const row=node('div');row.append(node('span','',label),node('strong','',value));facts.append(row);};
@@ -74,5 +77,5 @@ export function createDispatcher({state,node,time,focusOrder,chooseRoute,onStatu
  function highlight(){for(const e of timeline.querySelectorAll('[data-order]'))e.classList.toggle('selected-visit',e.dataset.order===state.selected);for(const e of timeline.querySelectorAll('[data-staff]'))e.classList.toggle('route-selected',e.dataset.staff===document.getElementById('route-choice').value);}
  find.oninput=renderTimeline;usedCheck.onchange=renderTimeline;historyCheck.onchange=renderAttention;
  return {render(){view=projectDay(state.day,state.ref?.staff);renderCounts();renderTimeline();renderAttention();},syncStatus,highlight,
-  loading(){empty(timeline,'Загружаем план выбранного дня…');empty(warnings,'Загружаем предупреждения…');statuses.replaceChildren();summary.textContent='';}};
+  loading(){const indicator=document.getElementById('warning-indicator');indicator.className='warning-indicator unknown';indicator.setAttribute('aria-label','Предупреждения: данные загружаются');empty(timeline,'Загружаем план выбранного дня…');empty(warnings,'Загружаем предупреждения…');statuses.replaceChildren();}};
 }

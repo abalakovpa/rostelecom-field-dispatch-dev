@@ -2,31 +2,39 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#452ba6"><title>Магистраль — диспетчерская</title>
+  <meta name="theme-color" content="#7700FF"><title>Ростелеком — диспетчерская</title>
   <link rel="stylesheet" href="/static/vendor/maplibre-gl.css">
   <link rel="stylesheet" href="/static/styles.css?v=maplibre-1">
   <link rel="stylesheet" href="/static/planner.css?v=dispatcher-2">
   <link rel="stylesheet" href="/static/dispatcher.css?v=dispatcher-2">
   <link rel="stylesheet" href="/static/map.css?v=maplibre-1">
-  <script type="module" src="/static/app.js?v=maplibre-1"></script>
+  <link rel="stylesheet" href="/static/shell.css?v=rt-1">
+  <script type="module" src="/static/app.js?v=rt-1"></script>
 </head>
 <body>
-  <aside class="rail">
-    <a class="brand" href="/" aria-label="Магистраль, главная"><span class="brand-symbol">м<span>↗</span></span><span>магистраль<small>Диспетчерская</small></span></a>
+  <aside class="rail" id="workspace-nav" aria-label="Рабочее пространство">
+    <div class="brand" aria-label="Ростелеком"><img src="/static/rostelecom.svg" alt="Ростелеком" width="162" height="34"></div>
     <div class="rail-label">РАБОЧЕЕ ПРОСТРАНСТВО</div>
-    <div class="nav-item active"><span>◈</span>Карта и наряды<i></i></div>
-    <div class="rail-note"><span class="note-icon">↗</span><strong>Работа со сменой</strong><p>Наряды, сотрудники и сервисные центры.</p></div>
-    <div class="rail-bottom"><span class="city-dot"></span><div>Екатеринбург<small>Часовой пояс UTC+5</small></div><span>⌁</span></div>
+    <nav class="workspace-nav" aria-label="Разделы диспетчерской">
+      <button class="nav-item active" data-view="map" aria-controls="map-view" aria-current="page" title="Карта и наряды"><span class="nav-icon" aria-hidden="true">◈</span><span class="nav-label">Карта и наряды</span></button>
+      <button class="nav-item" data-view="timeline" aria-controls="timeline-view" title="План смены по времени"><span class="nav-icon" aria-hidden="true">▤</span><span class="nav-label">План смены по времени</span></button>
+      <button class="nav-item" data-view="warnings" aria-controls="warnings-view" title="Предупреждения"><span class="nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></span><span class="nav-label">Предупреждения</span><i id="warning-indicator" class="warning-indicator unknown" role="status" aria-label="План ещё не рассчитан"></i></button>
+    </nav>
+    <div class="rail-bottom">
+      <span class="city-dot" aria-hidden="true"></span>
+      <div class="city-selection"><label for="city">Город</label><select id="city" aria-label="Город"><option disabled>Москва</option><option disabled>Санкт-Петербург</option><option disabled>Новосибирск</option><option selected>Екатеринбург</option><option disabled>Казань</option><option disabled>Нижний Новгород</option><option disabled>Челябинск</option><option disabled>Красноярск</option><option disabled>Самара</option><option disabled>Уфа</option><option disabled>Ростов-на-Дону</option><option disabled>Краснодар</option><option disabled>Омск</option><option disabled>Воронеж</option><option disabled>Пермь</option><option disabled>Волгоград</option></select><small>Московское время · UTC+3</small></div>
+    </div>
   </aside>
+  <button id="nav-backdrop" class="nav-backdrop" aria-label="Закрыть меню" hidden></button>
   <main>
-    <header class="topbar"><div class="breadcrumbs">Екатеринбург <span>/</span> Обзор дня</div><div id="source" class="source">Подключение…</div><div class="avatar" aria-label="Диспетчер">Д</div></header>
+    <header class="topbar"><button id="nav-toggle" class="nav-toggle" aria-label="Открыть рабочее пространство" aria-controls="workspace-nav" aria-expanded="false">☰</button><div class="mobile-brand"><img src="/static/rostelecom.svg" alt="Ростелеком" width="162" height="34"></div><div class="breadcrumbs">Екатеринбург <span>/</span> Обзор дня</div><div id="source" class="source">Подключение…</div><div class="avatar" aria-label="Диспетчер">Д</div></header>
     <section class="heading"><div><div class="eyebrow">ОБЗОР СМЕНЫ</div><h1>Наряды и маршруты</h1><p>Назначения сотрудников и адреса на выбранную дату.</p></div><div class="day-controls"><label for="day">Дата смены</label><div class="day-row"><select id="day" disabled aria-label="Дата смены"></select><button id="refresh" class="square-button" title="Обновить данные" aria-label="Обновить данные">↻</button></div></div></section>
     <div id="error" class="error" role="alert" hidden></div>
+    <section id="map-view" data-panel="map" aria-label="Карта и наряды">
     <section class="metrics" aria-label="Показатели дня">
       <article><div><span>Наряды на день</span><strong id="total">—</strong><small>Загружены в систему</small></div><span class="metric-icon orange">▤</span></article>
       <article><div><span>Сотрудники</span><strong id="staff-count">—</strong><small>В справочнике команды</small></div><span class="metric-icon violet">♧</span></article>
       <article><div><span>Сервисные центры</span><strong id="center-count">—</strong><small>Старт и возврат в СЦ</small></div><span class="metric-icon green">⌂</span></article>
-      <article><div><span>Повторные обращения</span><strong id="repeat-count">—</strong><small>Повышенный приоритет</small></div><span class="metric-icon pink">↺</span></article>
     </section>
     <section class="workspace" aria-label="Карта и список нарядов">
       <aside class="orders-panel">
@@ -44,7 +52,7 @@
         <div id="details" class="details" hidden></div>
       </section>
     </section>
-    <footer class="statusbar"><span id="plan-status">План ещё не построен</span><span id="plan-note">Маршруты появятся после подключения планировщика</span></footer>
+    </section>
   </main>
 </body>
 </html>

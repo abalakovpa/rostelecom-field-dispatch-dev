@@ -1,0 +1,248 @@
+{
+  "data_source": "postgres",
+  "date": "2026-10-26",
+  "model_now": "2026-10-26T08:30:00+05:00",
+  "orders": [
+    {
+      "lat": 56.8910989,
+      "lon": 60.63982226567289,
+      "slot": {
+        "end": "2026-10-26T11:10:00+05:00",
+        "start": "2026-10-26T09:10:00+05:00"
+      },
+      "address": "Екатеринбург, улица Корепина, 39",
+      "deadline": "2026-10-26T17:00:00+05:00",
+      "order_id": "ORD-20261026-0001",
+      "is_repeat": false,
+      "technology": "PON",
+      "building_id": "B-00001",
+      "latest_start": "2026-10-26T09:20:00+05:00",
+      "building_type": "MKD",
+      "registered_at": "2026-10-26T08:00:00+05:00",
+      "access_node_id": "AN-0001",
+      "work_type_code": "INST_PON_MKD",
+      "requires_height": false,
+      "required_equipment": {
+        "ONT": 0,
+        "STB": 0,
+        "ROUTER": 1
+      },
+      "slot_start": "2026-10-26T09:10:00+05:00",
+      "slot_end": "2026-10-26T11:10:00+05:00"
+    },
+    {
+      "lat": 56.8910472,
+      "lon": 60.60587078127935,
+      "slot": {
+        "end": "2026-10-26T13:10:00+05:00",
+        "start": "2026-10-26T11:10:00+05:00"
+      },
+      "address": "Екатеринбург, улица Калинина, 22",
+      "deadline": "2026-10-26T17:00:00+05:00",
+      "order_id": "ORD-20261026-0002",
+      "is_repeat": false,
+      "technology": "PON",
+      "building_id": "B-00002",
+      "latest_start": "2026-10-26T11:20:00+05:00",
+      "building_type": "MKD",
+      "registered_at": "2026-10-26T08:00:00+05:00",
+      "access_node_id": "AN-0001",
+      "work_type_code": "INST_PON_MKD",
+      "requires_height": false,
+      "required_equipment": {
+        "ONT": 0,
+        "STB": 0,
+        "ROUTER": 1
+      },
+      "slot_start": "2026-10-26T11:10:00+05:00",
+      "slot_end": "2026-10-26T13:10:00+05:00"
+    },
+    {
+      "lat": 56.8910472,
+      "lon": 60.60587078127935,
+      "slot": {
+        "end": "2026-10-26T16:10:00+05:00",
+        "start": "2026-10-26T14:10:00+05:00"
+      },
+      "address": "Екатеринбург, улица Калинина, 22",
+      "deadline": "2026-10-26T17:00:00+05:00",
+      "order_id": "ORD-20261026-0003",
+      "is_repeat": false,
+      "technology": "PON",
+      "building_id": "B-00002",
+      "latest_start": "2026-10-26T14:20:00+05:00",
+      "building_type": "MKD",
+      "registered_at": "2026-10-26T08:00:00+05:00",
+      "access_node_id": "AN-0001",
+      "work_type_code": "INST_PON_MKD",
+      "requires_height": true,
+      "required_equipment": {
+        "ONT": 0,
+        "STB": 0,
+        "ROUTER": 1
+      },
+      "slot_start": "2026-10-26T14:10:00+05:00",
+      "slot_end": "2026-10-26T16:10:00+05:00"
+    }
+  ],
+  "plan": {
+    "date": "2026-10-26",
+    "as_of": "2026-10-26T08:30:00+05:00",
+    "alerts": [],
+    "routes": [
+      {
+        "stops": [
+          {
+            "end": "2026-10-26T09:00:00+05:00",
+            "seq": 1,
+            "type": "DEPOT_START",
+            "start": "2026-10-26T09:00:00+05:00",
+            "status": "PLANNED",
+            "arrival": "2026-10-26T09:00:00+05:00",
+            "order_id": null,
+            "distance_m": 0,
+            "travel_sec": 0,
+            "location_id": "SC-01",
+            "equipment_after": {
+              "ONT": 0,
+              "STB": 0,
+              "ROUTER": 1
+            }
+          },
+          {
+            "end": "2026-10-26T09:56:06+05:00",
+            "seq": 2,
+            "type": "VISIT",
+            "start": "2026-10-26T09:11:06+05:00",
+            "status": "PLANNED",
+            "arrival": "2026-10-26T09:11:06+05:00",
+            "order_id": "ORD-20261026-0001",
+            "distance_m": 5194,
+            "travel_sec": 666,
+            "location_id": "B-00001",
+            "deadline_missed": false,
+            "equipment_after": {
+              "ONT": 0,
+              "STB": 0,
+              "ROUTER": 0
+            }
+          },
+          {
+            "end": "2026-10-26T10:22:22+05:00",
+            "seq": 3,
+            "type": "RESTOCK",
+            "start": "2026-10-26T10:07:22+05:00",
+            "status": "PLANNED",
+            "arrival": "2026-10-26T10:07:22+05:00",
+            "order_id": null,
+            "distance_m": 5202,
+            "travel_sec": 676,
+            "location_id": "SC-01",
+            "equipment_after": {
+              "ONT": 0,
+              "STB": 0,
+              "ROUTER": 3
+            }
+          },
+          {
+            "end": "2026-10-26T11:55:00+05:00",
+            "seq": 4,
+            "type": "VISIT",
+            "start": "2026-10-26T11:10:00+05:00",
+            "status": "PLANNED",
+            "arrival": "2026-10-26T10:30:17+05:00",
+            "order_id": "ORD-20261026-0002",
+            "distance_m": 2321,
+            "travel_sec": 475,
+            "location_id": "B-00002",
+            "deadline_missed": false,
+            "equipment_after": {
+              "ONT": 0,
+              "STB": 0,
+              "ROUTER": 2
+            }
+          },
+          {
+            "end": "2026-10-26T14:55:00+05:00",
+            "seq": 5,
+            "type": "VISIT",
+            "start": "2026-10-26T14:10:00+05:00",
+            "status": "PLANNED",
+            "arrival": "2026-10-26T11:55:00+05:00",
+            "order_id": "ORD-20261026-0003",
+            "distance_m": 0,
+            "travel_sec": 0,
+            "location_id": "B-00002",
+            "deadline_missed": false,
+            "equipment_after": {
+              "ONT": 0,
+              "STB": 0,
+              "ROUTER": 1
+            }
+          },
+          {
+            "end": "2026-10-26T15:55:00+05:00",
+            "seq": 6,
+            "type": "BREAK",
+            "start": "2026-10-26T14:55:00+05:00",
+            "status": "PLANNED",
+            "arrival": "2026-10-26T14:55:00+05:00",
+            "order_id": null,
+            "distance_m": 0,
+            "travel_sec": 0,
+            "location_id": "B-00002",
+            "equipment_after": {
+              "ONT": 0,
+              "STB": 0,
+              "ROUTER": 1
+            }
+          },
+          {
+            "end": "2026-10-26T16:02:59+05:00",
+            "seq": 7,
+            "type": "DEPOT_END",
+            "start": "2026-10-26T16:02:59+05:00",
+            "status": "PLANNED",
+            "arrival": "2026-10-26T16:02:59+05:00",
+            "order_id": null,
+            "distance_m": 2315,
+            "travel_sec": 479,
+            "location_id": "SC-01",
+            "equipment_after": {
+              "ONT": 0,
+              "STB": 0,
+              "ROUTER": 1
+            }
+          }
+        ],
+        "status": "ACTIVE",
+        "staff_id": "ST-001",
+        "unavailable_from": null,
+        "service_center_id": "SC-01",
+        "unavailable_until": null
+      }
+    ],
+    "cancelled": [],
+    "pgp_groups": [],
+    "unassigned": [],
+    "plan_version": 1,
+    "computation_ms": 3,
+    "incident_groups": [
+      {
+        "action": "INDIVIDUAL_VISITS",
+        "group_id": "INC-2026-10-26-1",
+        "order_ids": [
+          "ORD-20261026-0001",
+          "ORD-20261026-0002",
+          "ORD-20261026-0003"
+        ],
+        "detected_at": "2026-10-26T08:30:00+05:00",
+        "access_node_id": "AN-0001"
+      }
+    ],
+    "based_on_event_id": null,
+    "interrupted_visits": [],
+    "transferred_orders": [],
+    "automatic_reschedules": []
+  }
+}
