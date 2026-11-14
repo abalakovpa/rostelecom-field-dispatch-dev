@@ -85,3 +85,14 @@ test('event IDs inherited from Object.prototype are accepted once',async()=>{
   } finally {await app.close();}
 });
 
+
+test('panel catalog reflects active database reference rather than bundled files',async()=>{
+ const {app,store}=await fixture();
+ try {
+  store.state.reference.access_nodes[0].buildings[0].address='ACTIVE-DATABASE-ADDRESS';
+  const response=await app.inject({method:'GET',url:'/api/ui/catalog'});
+  assert.equal(response.statusCode,200);
+  assert.equal(response.json().buildings[0].address,'ACTIVE-DATABASE-ADDRESS');
+  assert.equal(response.json().staff.length,store.state.reference.staff.length);
+ }finally{await app.close();}
+});

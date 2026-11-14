@@ -1,3 +1,4 @@
+from compatibility import work_fits_building
 from deadlines import calculate_deadline
 """Local-only order entry tool. Uses the real REST API; no direct DB writes."""
 import json,csv,uuid,os
@@ -51,7 +52,7 @@ class Handler(BaseHTTPRequestHandler):
                 else:self.send(error.code,json.load(error))
             return
         if self.path=='/map' or self.path.startswith(('/api/','/static/')):self.proxy();return
-        if self.path=='/catalog':self.send(200,{'buildings':buildings,'works':works,'staff':api('GET','/api/ui/bootstrap')['staff']});return
+        if self.path=='/catalog':self.send(200,api('GET','/api/ui/catalog'));return
         if self.path=='/':self.send(200,(Path(__file__).parent/'index.html').read_text(encoding='utf-8-sig'),'text/html; charset=utf-8');return
         self.send(404,{'error':'Not found'})
     def do_POST(self):
@@ -70,8 +71,10 @@ class Handler(BaseHTTPRequestHandler):
         if self.path!='/create':self.send(404,{'error':'Not found'});return
         try:
             size=int(self.headers.get('Content-Length',0));assert 0<size<65536
-            body=json.loads(self.rfile.read(size));building=next(b for b in buildings if b['building_id']==body['building_id'])
-            work=next(w for w in works if w['code']==body['work_type_code'])
+            body=json.loads(self.rfile.read(size));catalog=api('GET','/api/ui/catalog')
+            building=next(b for b in catalog['buildings'] if b['building_id']==body['building_id'])
+            work=next(w for w in catalog['works'] if w['code']==body['work_type_code'])
+            if not work_fits_building(building,work):self.send(422,{'error':{'code':'WORK_BUILDING_MISMATCH','message':'Этот тип работы не подходит адресу: проверьте тип дома и технологию.'}});return
             day=body['date'];start=datetime.fromisoformat(day+'T'+body['time']+':00+05:00');end=start+timedelta(hours=2)
             days=api('GET','/api/ui/bootstrap')['days'];loaded=next((d for d in days if d['date']==day),None)
             if loaded is None:
@@ -82,7 +85,7 @@ class Handler(BaseHTTPRequestHandler):
             order_id='ORD-'+day.replace('-','')+'-'+str(int(uuid.uuid4().hex[:6],16)%9000+1000)
             order={k:building[k] for k in ['building_id','address','lat','lon','building_type','access_node_id','technology']}
             latest=start+timedelta(minutes=work['max_start_delay_min'] if work['max_start_delay_min'] is not None else 120)
-            order.update(order_id=order_id,work_type_code=work['code'],requires_height=bool(building.get('overhead_line')),registered_at=now,slot={'start':start.isoformat(),'end':end.isoformat()},latest_start=latest.isoformat(),deadline=calculate_deadline(work,now,end.isoformat()),required_equipment={'ONT':1 if building['technology']=='PON' else 0,'ROUTER':1,'STB':0},is_repeat=False,previous_order_id=None)
+            order.update(order_id=order_id,work_type_code=work['code'],requires_height=work['code']=='INST_PRIVATE_VLS' or bool(building['building_type']=='PRIVATE' and building.get('overhead_line')),registered_at=now,slot={'start':start.isoformat(),'end':end.isoformat()},latest_start=latest.isoformat(),deadline=calculate_deadline(work,now,end.isoformat()),required_equipment={'ONT':1 if building['technology']=='PON' else 0,'ROUTER':1,'STB':0},is_repeat=False,previous_order_id=None)
             if body.get('staff_id'):order['_test_staff_id']=body['staff_id']
             result=api('POST','/api/v1/days/'+day+'/events',dict(event_id='LOCAL-'+str(uuid.uuid4()),type='NEW_ORDER',timestamp=now,order=order))
             source_plan=api('GET','/api/ui/days/'+day)['plan']

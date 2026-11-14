@@ -12,3 +12,4 @@ coverage/
 
 # Download caches and local dataset staging
 /tmp/
+backups/

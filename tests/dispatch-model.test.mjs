@@ -69,3 +69,13 @@ test('captured Fastify UI response exposes incidents without double-counting vis
  assert.equal(projectWarnings(day).filter(a=>a.type==='INCIDENT_GROUP'&&a.status==='ACTIVE').length,1);
  assert.equal(JSON.stringify(day),original);
 });
+
+
+test('incident membership highlights assigned visits without subtracting assignments',()=>{
+ const order={order_id:'O1'};
+ const day={date:'2026-11-14',model_now:'2026-11-14T08:00:00+05:00',orders:[order],plan:{routes:[{staff_id:'S1',stops:[{type:'VISIT',order_id:'O1',arrival:'2026-11-14T09:00:00+05:00',start:'2026-11-14T09:00:00+05:00',end:'2026-11-14T10:00:00+05:00'}]}],unassigned:[],cancelled:[],pgp_groups:[],incident_groups:[{group_id:'INC1',order_ids:['O1']}],alerts:[]}};
+ const view=projectDay(day);
+ assert.equal(view.counts.assigned,1);assert.equal(view.counts.pgp,1);assert.equal(view.status('O1'),'assigned');
+ assert.equal(matchesOrderStatus(view,'O1','pgp'),true);assert.equal(matchesOrderStatus(view,'O1','assigned'),true);
+ assert.equal(markerSummary([order],view).kind,'pgp');
+});

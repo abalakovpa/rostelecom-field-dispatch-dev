@@ -1,13 +1,13 @@
 // UI projections use only the current Plan and model time, never training facts.
 export function planOverview(plan){
   return {visits:(plan?.routes||[]).reduce((n,r)=>n+r.stops.filter(s=>s.type==='VISIT').length,0),
-    unassigned:plan?.unassigned?.length||0,pgp:(plan?.pgp_groups||[]).reduce((n,g)=>n+g.order_ids.length,0)};
+    unassigned:plan?.unassigned?.length||0,pgp:new Set([...(plan?.pgp_groups||[]),...(plan?.incident_groups||[])].flatMap(g=>g.order_ids)).size};
 }
 export function projectDay(day,staff=[]){
   const assignments=new Map(),unassigned=new Map((day?.plan?.unassigned||[]).map(x=>[x.order_id,x]));
   const cancelled=new Map((day?.plan?.cancelled||[]).map(x=>[x.order_id,x])),groups=new Map();
-  const transferred=new Set();
-  for(const [kind,items] of [['incident',day?.plan?.incident_groups||[]],['transfer',day?.plan?.pgp_groups||[]]])for(const g of items)for(const id of g.order_ids){groups.set(id,{...g,kind});if(kind==='transfer')transferred.add(id);}
+  const transferred=new Set(),incidents=new Map();
+  for(const [kind,items] of [['incident',day?.plan?.incident_groups||[]],['transfer',day?.plan?.pgp_groups||[]]])for(const g of items)for(const id of g.order_ids){groups.set(id,{...g,kind});if(kind==='incident')incidents.set(id,g);if(kind==='transfer')transferred.add(id);}
   for(const r of day?.plan?.routes||[]){let n=0;for(const stop of r.stops)if(stop.type==='VISIT')assignments.set(stop.order_id,{staff:r.staff_id,number:++n,stop});}
   const now=Date.parse(day?.model_now);const status=id=>{
     if(!day?.plan)return 'pending';if(cancelled.has(id))return 'cancelled';if(transferred.has(id))return 'pgp';
@@ -40,7 +40,7 @@ export function projectDay(day,staff=[]){
       workMin:minutes('VISIT'),travelMin:minutes('TRAVEL'),waitMin:minutes('WAIT'),
       utilization:available>0?(minutes('VISIT')+minutes('TRAVEL'))/available:0};
   });
-  return {assignments,unassigned,cancelled,groups,status,counts,rows,risks,riskAlerts,transferred};
+  return {assignments,unassigned,cancelled,groups,status,counts,rows,risks,riskAlerts,transferred,incidents};
 }
 
 export const statusLabels={pending:'План не построен',assigned:'Назначен',active:'В работе по плану',completed:'Завершён по плану',unassigned:'Не назначен',pgp:'Групповая проблема',cancelled:'Отменён',unknown:'Нет статуса в плане'};
