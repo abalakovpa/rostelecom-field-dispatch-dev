@@ -71,3 +71,13 @@ class FutureCalendarTest(unittest.TestCase):
         self.assertTrue(result['_future_transfers'])
         self.assertEqual(result['_future_transfers'][0]['to_date'],'2026-10-27')
 
+
+class AfterShiftTest(unittest.TestCase):
+    def test_2100_request_moves_to_next_day(self):
+        reference,matrix,day=sample();day['orders']=day['orders'][:1]
+        order=day['orders'][0];order['slot']={'start':at('21:00:00'),'end':at('23:00:00')};order['latest_start']=at('21:10:00');order['deadline']='2026-10-29T18:00:00+05:00'
+        result=calculate(dict(reference=reference,matrix=matrix,day=day,time_limit_sec=2))
+        self.assertTrue(result['_future_transfers'])
+        transfer=result['_future_transfers'][0];self.assertEqual(transfer['to_date'],'2026-10-27')
+        visit=next(s for r in transfer['target_plan']['routes'] for s in r['stops'] if s.get('order_id')==order['order_id'])
+        self.assertGreaterEqual(visit['start'],'2026-10-27T09:00:00+05:00');self.assertLessEqual(visit['end'],'2026-10-27T18:00:00+05:00')

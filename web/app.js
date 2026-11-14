@@ -1,4 +1,5 @@
-﻿import {projectDay,planOverview,statusLabels,actionLabels} from './dispatch-model.js';
+﻿import {createEventId} from './uuid.js';
+import {projectDay,planOverview,statusLabels,actionLabels} from './dispatch-model.js';
 import {createDispatcher} from './dispatcher-view.js';
 const $=id=>document.getElementById(id);
 const state={ref:null,day:null,tab:'orders',selected:null,request:0,markers:new Map(),geometryRequest:0,status:'all',view:null};
@@ -253,7 +254,7 @@ function updateEventExample(){
   if(!state.day){eventSend.disabled=true;return;}
   eventSend.disabled=!state.day.plan;
   const now=new Date(state.day.model_now);const future=new Date(now.getTime()+15*60000);
-  const body={event_id:'EV-'+crypto.randomUUID(),type:eventType.value,timestamp:eventIso(future)};
+  const body={event_id:'EV-'+createEventId(),type:eventType.value,timestamp:eventIso(future)};
   const assignedVisits=(state.day.plan?.routes||[]).flatMap(r=>r.stops.filter(s=>s.type==='VISIT').map(s=>({staff:r.staff_id,stop:s})));
   const next=assignedVisits.find(v=>new Date(v.stop.end)>now);const order=state.day.orders.find(o=>new Date(o.slot_start)>future)||state.day.orders[0];
   if(body.type==='ORDER_CANCELLED'){body.order_id=order?.order_id;body.reason='CUSTOMER_REQUEST';}
@@ -281,5 +282,6 @@ eventSend.onclick=async()=>{
     await bootstrap();eventStatus.textContent=`${result.duplicate?'Повтор уже принятого события':'Событие принято'} · версия ${result.plan_version} · ${result.processing_ms} мс`;
   }catch(e){eventStatus.textContent=e.message;}finally{eventSend.disabled=!state.day?.plan;$('day').disabled=false;}
 };
+
 
 

@@ -9,7 +9,7 @@ ROOT=Path('/app')
 API_URL=os.environ.get('API_URL','http://api:8080')
 def api(method,path,payload=None):
     request=Request(API_URL+path,data=json.dumps(payload).encode() if payload is not None else None,method=method,headers={'Content-Type':'application/json'})
-    with urlopen(request,timeout=330) as response:return json.load(response)
+    with urlopen(request,timeout=35) as response:return json.load(response)
 def data(name):return json.loads((ROOT/'data'/name).read_text(encoding='utf-8-sig'))
 works=list(csv.DictReader((ROOT/'data/work_types.csv').open(encoding='utf-8-sig')))
 for work in works:
@@ -23,7 +23,7 @@ class Handler(BaseHTTPRequestHandler):
         self.connection.settimeout(20)
 
     def send(self,status,body,kind='application/json; charset=utf-8'):
-        raw=body.encode() if isinstance(body,str) else json.dumps(body,ensure_ascii=False).encode();self.send_response(status);self.send_header('Content-Type',kind);self.send_header('Content-Length',str(len(raw)));self.end_headers();self.wfile.write(raw)
+        raw=body.encode() if isinstance(body,str) else json.dumps(body,ensure_ascii=False).encode();self.send_response(status);self.send_header('Content-Type',kind);self.send_header('Cache-Control','no-store');self.send_header('Content-Length',str(len(raw)));self.end_headers();self.wfile.write(raw)
     def proxy(self):
         if not self.path.startswith(('/api/','/static/')) and self.path!='/map':self.send(404,{'error':'Not found'});return
         path='/' if self.path=='/map' else self.path
@@ -34,7 +34,7 @@ class Handler(BaseHTTPRequestHandler):
                 if not 0<size<2*1024*1024:self.send(400,{'error':'Invalid body size'});return
                 raw=self.rfile.read(size)
             request=Request(API_URL+path,data=raw,method=self.command,headers={'Content-Type':'application/json'})
-            with urlopen(request,timeout=330) as response:
+            with urlopen(request,timeout=35) as response:
                 raw=response.read();self.send_response(response.status);self.send_header('Content-Type',response.headers.get('Content-Type','application/octet-stream'));self.send_header('Content-Length',str(len(raw)));self.end_headers();self.wfile.write(raw)
         except HTTPError as error:self.send(error.code,json.load(error))
     def do_GET(self):
@@ -72,19 +72,27 @@ class Handler(BaseHTTPRequestHandler):
             latest=start+timedelta(minutes=work['max_start_delay_min'] if work['max_start_delay_min'] is not None else 120)
             order.update(order_id=order_id,work_type_code=work['code'],requires_height=bool(building.get('overhead_line')),registered_at=now,slot={'start':start.isoformat(),'end':end.isoformat()},latest_start=latest.isoformat(),deadline=(start+timedelta(days=3)).isoformat(),required_equipment={'ONT':1 if building['technology']=='PON' else 0,'ROUTER':1,'STB':0},is_repeat=False,previous_order_id=None)
             result=api('POST','/api/v1/days/'+day+'/events',dict(event_id='LOCAL-'+str(uuid.uuid4()),type='NEW_ORDER',timestamp=now,order=order))
-            bootstrap=api('GET','/api/ui/bootstrap');assignment=None;reason=None
-            for entry in bootstrap['days']:
-                plan=api('GET','/api/ui/days/'+entry['date'])['plan']
+            source_plan=api('GET','/api/ui/days/'+day)['plan']
+            dates=[day]
+            for transfer in reversed((source_plan or {}).get('transferred_orders',[])):
+                if transfer['order_id']==order_id:
+                    dates.insert(0,transfer['to_date']);break
+            assignment=None;reason=None
+            for date in dates:
+                plan=source_plan if date==day else api('GET','/api/ui/days/'+date)['plan']
                 for route in (plan or {}).get('routes',[]):
                     for stop in route['stops']:
-                        if stop.get('order_id')==order_id:assignment=dict(date=entry['date'],staff_id=route['staff_id'],start=stop['start'],end=stop['end'])
+                        if stop.get('order_id')==order_id:assignment=dict(date=date,staff_id=route['staff_id'],start=stop['start'],end=stop['end'])
+                if assignment:break
                 for item in (plan or {}).get('unassigned',[]):
                     if item['order_id']==order_id:reason=item
             self.send(200,dict(order_id=order_id,assignment=assignment,reason=reason,result=result))
         except HTTPError as error:self.send(error.code,json.load(error))
+        except TimeoutError:self.send(504,{'error':'API response timed out; check the map before resubmitting the order'})
         except Exception as error:self.send(400,{'error':str(error)})
 print('Request panel listening on port 8082',flush=True)
 ThreadingHTTPServer(('0.0.0.0',8082),Handler).serve_forever()
+
 
 
 
