@@ -186,7 +186,7 @@ function assigned(id){
   return state.view?.assignments.get(id)||null;
 }
 const planControls=node('div','plan-controls');
-const buildButton=node('button','build-button','Рассчитать план · до 30 с');buildButton.id='build-plan';
+const buildButton=node('button','build-button','Сформировать план');buildButton.id='build-plan';
 const routeChoice=node('select');routeChoice.id='route-choice';routeChoice.setAttribute('aria-label','Маршрут сотрудника');
 planControls.append(buildButton,routeChoice);document.querySelector('.workspace').before(planControls);
 let routeLayer=map?L.layerGroup().addTo(map):null;
@@ -197,7 +197,7 @@ function updateRouteOptions(){
   for(const route of routes){const visits=route.stops.filter(s=>s.type==='VISIT');const option=node('option','',`${route.staff_id} · ${visits.length} визитов`);option.value=route.staff_id;routeChoice.append(option);}
   routeChoice.disabled=!routes.length;
   buildButton.disabled=(state.day?.plan?.plan_version||0)>1;
-  buildButton.title=buildButton.disabled?'После событий используйте перепланирование, первоначальный расчёт закрыт.':'';
+  buildButton.title=buildButton.disabled?'После событий план обновляется автоматически.':'Построить расписание выездов. Лимит вычисления — 30 секунд; длительность работ определяется типом заявки.';
 }
 buildButton.onclick=async()=>{
   if(!state.day)return;const day=$('day').value;buildButton.disabled=true;$('day').disabled=true;buildButton.textContent='Идёт расчёт…';error('');
@@ -205,7 +205,7 @@ buildButton.onclick=async()=>{
     const response=await fetch(`/api/v1/days/${day}/plan`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({time_limit_sec:30})});
     const result=await response.json();if(!response.ok)throw new Error(result.error?.message||'Не удалось рассчитать план.');
     await loadDay();
-  }catch(e){error(e.message);}finally{buildButton.disabled=false;$('day').disabled=false;buildButton.textContent='Пересчитать план · до 30 с';}
+  }catch(e){error(e.message);}finally{buildButton.disabled=false;$('day').disabled=false;buildButton.textContent='Обновить план';}
 };
 const dispatcher=createDispatcher({state,node,time,
   onStatus(status){state.status=status;state.selected=null;$('details').hidden=true;setTab('orders');dispatcher.syncStatus();},
@@ -282,6 +282,7 @@ eventSend.onclick=async()=>{
     await bootstrap();eventStatus.textContent=`${result.duplicate?'Повтор уже принятого события':'Событие принято'} · версия ${result.plan_version} · ${result.processing_ms} мс`;
   }catch(e){eventStatus.textContent=e.message;}finally{eventSend.disabled=!state.day?.plan;$('day').disabled=false;}
 };
+
 
 
 
