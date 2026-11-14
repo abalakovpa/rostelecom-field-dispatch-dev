@@ -9,3 +9,5 @@
 .gantt-head .gantt-label{z-index:11}
 .gantt-hours{overflow:hidden;min-width:0}
 .gantt-block.selected-visit,.gantt-block:focus-visible{outline-offset:-3px}
+
+.attention-grid{grid-template-columns:1fr}

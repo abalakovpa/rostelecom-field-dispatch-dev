@@ -63,7 +63,7 @@ Fastify должен прочитать `model_now`, наряды и после�
 - `geometry` — GeoJSON `LineString` всего маршрута;
 - `segments[]`: `from_stop`, `to_stop`, `geometry` (GeoJSON `LineString`).
 
-GeoJSON использует **`[lon, lat]`**, маркеры Leaflet — `[lat, lon]`.
+GeoJSON и маркеры MapLibre GL JS используют **`[lon, lat]`**.
 Сегменты идут по направлению движения. Подписи визитов — `"1"`, `"2"` и т.д.,
 СЦ — `"СЦ"`. Визиты нумеруются по `VISIT`, без учёта обеда и пополнения.
 Последовательные одинаковые `location_id` не образуют дорожный сегмент:

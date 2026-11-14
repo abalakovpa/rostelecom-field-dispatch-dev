@@ -14,14 +14,14 @@ export function createDispatcher({state,node,time,focusOrder,chooseRoute,onStatu
  gantt.append(legend);const timeline=node('div','gantt-scroll');timeline.id='gantt';const summary=node('div','gantt-summary');gantt.append(timeline,summary,node('div','gantt-note','Шкала показывает исполнение по плану, а не подтверждённые фактические отметки. Нажмите визит, чтобы открыть наряд на карте.'));
  const attention=node('div','attention-grid');const warningPanel=node('section','dispatch-section attention-column');const warningHead=node('div','dispatch-heading');const warningTitle=node('div');warningTitle.append(node('h2','','Предупреждения'),node('p','','Сохранённые сигналы текущей версии плана'));
  const history=node('label','attention-history');const historyCheck=node('input');historyCheck.type='checkbox';history.append(historyCheck,node('span','','Показать закрытые'));warningHead.append(warningTitle,history);warningPanel.append(warningHead);const warnings=node('div','attention-list');warnings.id='warnings';warningPanel.append(warnings);
- const groupPanel=node('section','dispatch-section attention-column');const groupHead=node('div','dispatch-heading');const groupTitle=node('div');groupTitle.append(node('h2','','Групповые проблемы'),node('p','','Наряды по одному узлу · передача в станционное подразделение'));groupHead.append(groupTitle);groupPanel.append(groupHead);const groups=node('div','attention-list');groups.id='pgp-groups';groupPanel.append(groups);attention.append(warningPanel,groupPanel);root.append(gantt,attention);
+ attention.append(warningPanel);root.append(gantt,attention);
  let view=null;
  function empty(target,text){target.replaceChildren(node('div','dispatch-empty',text));}
  function syncStatus(){statusSelect.value=state.status||'all';for(const b of statuses.querySelectorAll('button'))b.setAttribute('aria-pressed',String(b.dataset.status===(state.status||'all')));}
  function renderCounts(){
   statuses.replaceChildren();
   for(const [key,label]of [['all','Все наряды'],['assigned','Назначены'],['risk','Риски'],['unassigned','Не назначены'],['pgp','ПГП'],['cancelled','Отменены']]){
-   const b=node('button','status-filter');b.dataset.status=key;b.append(node('span','',label),node('strong','',state.day?.plan||key==='all'?String(view.counts[key]):'—'));b.disabled=!state.day?.plan&&key!=='all';b.onclick=()=>onStatus(key);statuses.append(b);
+   const b=node('button','status-filter');b.dataset.status=key;b.title=({risk:'Только активные риски опоздания',pgp:'Наряды, переданные в станционное подразделение как групповая проблема',cancelled:'Отменённые наряды за выбранную дату'})[key]||label;b.append(node('span','',label),node('strong','',state.day?.plan||key==='all'?String(view.counts[key]):'—'));b.disabled=!state.day?.plan&&key!=='all';b.onclick=()=>onStatus(key);statuses.append(b);
   }syncStatus();
  }
  function renderTimeline(){
@@ -49,7 +49,7 @@ export function createDispatcher({state,node,time,focusOrder,chooseRoute,onStatu
   timeline.replaceChildren(grid);summary.textContent=`Показано ${rows.length} из ${all.length} сотрудников · работы ${Math.round(rows.reduce((s,r)=>s+r.workMin,0))} мин · дорога ${Math.round(rows.reduce((s,r)=>s+r.travelMin,0))} мин · модельное время ${time(state.day.model_now)}`;highlight();
  }
  function renderAttention(){
-  const plan=state.day?.plan;if(!plan){empty(warnings,'Предупреждения появятся после расчёта и обработки событий.');empty(groups,'План не построен.');return;}
+  const plan=state.day?.plan;if(!plan){empty(warnings,'Предупреждения появятся после расчёта и обработки событий.');return;}
   const list=plan.alerts.filter(a=>historyCheck.checked||a.status==='ACTIVE');warnings.replaceChildren();
   if(!list.length)empty(warnings,plan.alerts.length?'Активных предупреждений нет. Включите «Показать закрытые» для истории.':'По известным событиям и текущей матрице предупреждений нет. Неизвестные будущие задержки и пробки прогнозом не учитываются.');
   for(const a of list){const card=node('article','attention-card');const head=node('header');head.append(node('strong','',({LATE_RISK:'Риск опоздания',PGP_DETECTED:'Выявлена ПГП',UNASSIGNED:'Неназначенный наряд'})[a.type]||a.type),node('span','',a.status==='ACTIVE'?'Активно':'Закрыто'));card.append(head,node('p','',a.message),node('div','attention-action',a.type==='LATE_RISK'&&a.status==='RESOLVED'?'Риск снят — дополнительных действий не требуется':actionLabels[a.suggested_action]||a.suggested_action),node('p','',`Создано ${time(a.created_at)}${a.staff_id?' · '+a.staff_id:''}${a.applied?' · действие применено':''}`));
@@ -69,13 +69,10 @@ export function createDispatcher({state,node,time,focusOrder,chooseRoute,onStatu
    }
    if(a.order_id){const b=node('button','','Открыть наряд');b.onclick=()=>focusOrder(a.order_id);card.append(b);}else if(a.group_id){const b=node('button','','Показать наряды ПГП');b.onclick=()=>onStatus('pgp');card.append(b);}warnings.append(card);
   }
-  groups.replaceChildren();if(!plan.pgp_groups.length)empty(groups,'Групповых проблем в текущем плане не выявлено.');
-  for(const g of plan.pgp_groups){const card=node('article','attention-card');const head=node('header');head.append(node('strong','',g.access_node_id),node('span','',`${g.order_ids.length} нарядов`));card.append(head,node('p','',`${g.group_id} · выявлено ${time(g.detected_at)}`),node('div','attention-action',actionLabels[g.action]||g.action));
-   for(const id of g.order_ids){const b=node('button','',id);b.onclick=()=>focusOrder(id);card.append(b);}groups.append(card);
-  }
+
  }
  function highlight(){for(const e of timeline.querySelectorAll('[data-order]'))e.classList.toggle('selected-visit',e.dataset.order===state.selected);for(const e of timeline.querySelectorAll('[data-staff]'))e.classList.toggle('route-selected',e.dataset.staff===document.getElementById('route-choice').value);}
  find.oninput=renderTimeline;usedCheck.onchange=renderTimeline;historyCheck.onchange=renderAttention;
  return {render(){view=projectDay(state.day,state.ref?.staff);renderCounts();renderTimeline();renderAttention();},syncStatus,highlight,
-  loading(){empty(timeline,'Загружаем план выбранного дня…');empty(warnings,'Загружаем предупреждения…');empty(groups,'Загружаем группы…');statuses.replaceChildren();summary.textContent='';}};
+  loading(){empty(timeline,'Загружаем план выбранного дня…');empty(warnings,'Загружаем предупреждения…');statuses.replaceChildren();summary.textContent='';}};
 }

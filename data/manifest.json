@@ -14,8 +14,8 @@
     "2026-10-23"
   ],
   "geography": {
-    "district": "Орджоникидзевский район",
-    "osm_relation": 5819002,
+    "city": "Екатеринбург",
+    "city_relation": 6564910,
     "locations": "provenance/real_locations.json"
   },
   "counts": {
@@ -29,20 +29,20 @@
   "routing": {
     "endpoint": "http://router.project-osrm.org",
     "service": "table/v1/driving",
-    "coordinate_sha256": "42a0c19dca0032fe01d556d3064e990fad09b004c278cc9c4679b147bdd330d4",
+    "coordinate_sha256": "ccb28bcb3f3ee2c44ef2d1fa31a625a306dd0c593104be877ff2a68652391fe9",
     "parking_and_walking_sec": 180,
     "data_version": null,
     "rounding": "ceil; diagonal=0",
     "point_count": 85,
-    "max_snap_distance_m": 469.3954738
+    "max_snap_distance_m": 74.55547644
   },
   "hashes": {
-    "service_centers.json": "cbdcb465950127396fcbafb51223c0452919151b16f06e789ad220e9e292e92e",
+    "service_centers.json": "0a2be74e192dcda149a81d1e927eb647ff5297278342a48434779e0710f09971",
     "staff.json": "2e92fae68e15ab9d384f6c1d44c01ae73038ff7e3bddc58461b069a5a1b9b0f5",
-    "access_nodes.json": "61bf221c143f55482f0e0c13aff0d2d62b6951cec1c560030fe66664e332a04e",
+    "access_nodes.json": "6a2023d9e082993de090de18deee8e3fb5151dbf10b9d8c5eb827bf6a34f9951",
     "work_types.csv": "8caff720bcde2e89d3070f6dc1566b9a551cb30bb285a3cda17bc412093f6f3b",
-    "travel_matrix.json": "70d7c1245c0c1e181f59a9c50330b046b7736b199c870cacd876475de73a5266",
-    "orders_train.json": "7e8f339e6b02efe7c0a7fb8d126a4eb586d5f728ac284fe1bf2177e7d7f46296",
-    "events_example.json": "b58dca77d02a4215c2744aedb65aeb953ae16d3007eddfe35c43c87a76cab0fc"
+    "travel_matrix.json": "cda0727f93563d9aa24b6cc6a79c5a72e3bfbd185ed1be4e348ca951bd801838",
+    "orders_train.json": "b83e4e2b7b41a9d663e55d77c3b6ab4a2ce52ab7845129a6e2fb0b8146c75ad5",
+    "events_example.json": "88c0fdf723af70999c95b530d92b2a5cc8da72ed2ea334adddc648961c184e66"
   }
 }

@@ -6,17 +6,17 @@
   "staff": 40,
   "service_centers": 5,
   "matrix_points": 85,
-  "repeat_orders": 164,
+  "repeat_orders": 160,
   "planted_pgp_groups": 10,
   "events": 9,
   "triggers": 3,
   "historical_outcomes": {
     "PGP_GROUPED": 30,
-    "COMPLETED": 2205,
-    "RESCHEDULED": 1265
+    "RESCHEDULED": 1449,
+    "COMPLETED": 2021
   },
   "checks": [
-    "OSM building footprints and district membership",
+    "OSM building footprints and geography membership",
     "OpenAPI schemas",
     "PDF norms and scale",
     "foreign references",

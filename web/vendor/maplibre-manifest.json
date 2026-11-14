@@ -1,0 +1,31 @@
+{
+  "package": "maplibre-gl",
+  "version": "6.18.0",
+  "files": {
+    "maplibre-gl.js": {
+      "package_file": "dist/maplibre-gl.mjs",
+      "original_sha256": "1e0a68844041aec6621a10d4725c9970c3b19cf7e1605d98b01dbc993e1058b2",
+      "installed_sha256": "70f61a3e13e322257de0f105a64d78a90c917b23ff50b9e7edc377413168a5ab"
+    },
+    "maplibre-gl-worker.js": {
+      "package_file": "dist/maplibre-gl-worker.mjs",
+      "original_sha256": "c8998a2616612ebc7afc3a6f83e31ad1c5f6187550a018b4fd0561779c33015b",
+      "installed_sha256": "c9912030ec73d4bb3cb938f8d363dfafaa29ac6cc2c6a709f5d4f690d4262dbe"
+    },
+    "maplibre-gl-shared.js": {
+      "package_file": "dist/maplibre-gl-shared.mjs",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "installed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "maplibre-gl.css": {
+      "package_file": "dist/maplibre-gl.css",
+      "original_sha256": "a90798a1953017790e590f7e1bd35ff103a8a4263972cb47290b78adf86f8c20",
+      "installed_sha256": "a90798a1953017790e590f7e1bd35ff103a8a4263972cb47290b78adf86f8c20"
+    },
+    "MAPLIBRE-LICENSE.txt": {
+      "package_file": "LICENSE.txt",
+      "original_sha256": "ee5fc05a0677eaf69601d2c7db0d9ecd6cc27c3abc1d0733bc9ed34707cf8ef2",
+      "installed_sha256": "ee5fc05a0677eaf69601d2c7db0d9ecd6cc27c3abc1d0733bc9ed34707cf8ef2"
+    }
+  }
+}

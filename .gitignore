@@ -9,3 +9,6 @@ __pycache__/
 node_modules/
 dist/
 coverage/
+
+# Download caches and local dataset staging
+/tmp/

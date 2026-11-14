@@ -1,9 +1,22 @@
 {
-  "method": "stochastic occupied-cell sample, independent of depots",
-  "cell_size_m": 600,
-  "min_same_type_spacing_m": 100,
+  "method": "occupied-cell sample independent of depots",
+  "sample_zones": {
+    "north": 20,
+    "northeast": 6,
+    "center": 6,
+    "west": 17,
+    "southwest": 18,
+    "south": 5,
+    "southeast": 2,
+    "east": 6
+  },
+  "centers": {
+    "SC-01": "north",
+    "SC-02": "west",
+    "SC-03": "south",
+    "SC-04": "east",
+    "SC-05": "center"
+  },
   "homes": 80,
-  "streets": 51,
-  "nearest_depot_median_m": 755,
-  "homes_within_500m_of_any_depot": 18
+  "service_centers": 5
 }

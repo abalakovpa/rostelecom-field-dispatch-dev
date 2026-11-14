@@ -13,8 +13,13 @@ export function projectDay(day,staff=[]){
     const visit=assignments.get(id);if(!visit)return unassigned.has(id)?'unassigned':'unknown';
     return Date.parse(visit.stop.end)<=now?'completed':Date.parse(visit.stop.start)<=now?'active':'assigned';
   };
-  const risks=new Set((day?.plan?.alerts||[]).filter(a=>a.type==='LATE_RISK'&&a.status==='ACTIVE'&&a.order_id).map(a=>a.order_id));
-  const counts={all:day?.orders?.length||0,assigned:assignments.size,unassigned:unassigned.size,pgp:groups.size,cancelled:cancelled.size,risk:risks.size};
+  const orderIds=new Set((day?.orders||[]).map(o=>o.order_id));
+  const riskAlerts=new Map();
+  for(const a of day?.plan?.alerts||[])if(a.type==='LATE_RISK'&&a.status==='ACTIVE'&&orderIds.has(a.order_id)&&!cancelled.has(a.order_id)&&!groups.has(a.order_id)){
+    if(!riskAlerts.has(a.order_id))riskAlerts.set(a.order_id,[]);riskAlerts.get(a.order_id).push(a);
+  }
+  const risks=new Set(riskAlerts.keys());
+  const counts={all:day?.orders?.length||0,assigned:[...assignments.keys()].filter(id=>orderIds.has(id)&&!cancelled.has(id)&&!groups.has(id)).length,unassigned:[...unassigned.keys()].filter(id=>orderIds.has(id)&&!cancelled.has(id)&&!groups.has(id)).length,pgp:[...groups.keys()].filter(id=>orderIds.has(id)&&!cancelled.has(id)).length,cancelled:[...cancelled.keys()].filter(id=>orderIds.has(id)).length,risk:risks.size};
   const rows=(day?.plan?.routes||[]).map(route=>{
     const person=staff.find(s=>s.staff_id===route.staff_id);const blocks=[];
     for(let i=0;i<route.stops.length;i++){
@@ -34,8 +39,23 @@ export function projectDay(day,staff=[]){
       workMin:minutes('VISIT'),travelMin:minutes('TRAVEL'),waitMin:minutes('WAIT'),
       utilization:available>0?(minutes('VISIT')+minutes('TRAVEL'))/available:0};
   });
-  return {assignments,unassigned,cancelled,groups,status,counts,rows,risks};
+  return {assignments,unassigned,cancelled,groups,status,counts,rows,risks,riskAlerts};
 }
 
 export const statusLabels={pending:'План не построен',assigned:'Назначен',active:'В работе по плану',completed:'Завершён по плану',unassigned:'Не назначен',pgp:'Групповая проблема',cancelled:'Отменён',unknown:'Нет статуса в плане'};
 export const actionLabels={RESCHEDULE:'Согласовать новый слот',REASSIGN:'Передать другому сотруднику',ESCALATE:'Решение диспетчера',TRANSFER_TO_STATION:'Передать в станционное подразделение',NONE:'Без действия'};
+
+// Shared by list filters and map marker summaries.
+export function matchesOrderStatus(view,id,filter='all'){
+ if(filter==='all')return true;
+ if(filter==='risk')return view.risks.has(id);
+ if(filter==='assigned')return view.assignments.has(id)&&!['cancelled','pgp'].includes(view.status(id));
+ return view.status(id)===filter;
+}
+export function markerSummary(orders,view){
+ const counts={risk:0,pgp:0,cancelled:0};
+ for(const o of orders)for(const key of Object.keys(counts))if(matchesOrderStatus(view,o.order_id,key))counts[key]++;
+ const labels={risk:'Риск опоздания',pgp:'ПГП',cancelled:'Отменены'};
+ return {counts,kind:counts.risk?'risk':counts.pgp?'pgp':counts.cancelled===orders.length&&orders.length?'cancelled':'normal',
+   text:Object.entries(counts).filter(([,n])=>n).map(([k,n])=>`${labels[k]}: ${n}`).join(' · ')};
+}

@@ -1,0 +1,27 @@
+.map-marker{padding:0;cursor:pointer;font-family:Manrope,"Segoe UI",sans-serif}
+.map-marker.order-icon{width:23px;height:23px}
+.map-marker.depot-icon{width:27px;height:27px}
+.map-marker.route-number{width:26px;height:26px}
+.maplibregl-popup{z-index:1200}
+.maplibregl-popup-content{font:11px/1.7 Manrope,"Segoe UI",sans-serif;border-radius:8px;padding:13px 22px 13px 13px;box-shadow:0 3px 18px #33334325}
+.maplibregl-popup-close-button{font-size:18px;color:#777;background:transparent;padding:0 5px}
+.route-tooltip{pointer-events:none}
+.route-tooltip .maplibregl-popup-content{padding:5px 8px;font-size:10px}
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl-group{margin-bottom:8px;border-radius:7px;overflow:hidden;box-shadow:0 2px 12px #33334316}
+.maplibregl-ctrl-attrib{font:8px/1.5 Manrope,"Segoe UI",sans-serif;background:#ffffffdf;max-width:100%}
+.maplibregl-canvas:focus-visible{outline:3px solid #af9aee;outline-offset:-3px}
+@media(prefers-reduced-motion:reduce){.map-marker{transition:none}}
+
+.map-marker.marker-risk{background:#ffe06a;color:#5b4a0a;border:2px solid #fff;box-shadow:0 0 0 2px #a88b23}
+.map-marker.marker-pgp{background:#f48cab;color:#682b40;border:2px solid #fff;box-shadow:0 0 0 2px #b75175}
+.map-marker.marker-cancelled{background:#d7dfe8;color:#405269;border:2px dashed #5f738b;box-shadow:0 0 0 2px #fff}
+.map-marker.focused{outline:3px solid #187fba;outline-offset:3px}
+.map-legend{flex-wrap:wrap;max-width:calc(100% - 65px)}
+.legend-risk{background:#ffe06a;border:1px solid #a88b23}
+.legend-pgp{background:#f48cab;border:1px solid #b75175}
+.legend-cancelled{background:#d7dfe8;border:1px dashed #5f738b}
+.risk-detail{background:#fff7cf;color:#655622}
+
+.map-view-controls{position:absolute;z-index:500;top:17px;right:16px;display:flex;flex-direction:column;gap:7px}
+.map-view-controls .fit-button{position:static;justify-content:center}
+@media(max-width:700px){.map-view-controls{top:10px;right:10px}}

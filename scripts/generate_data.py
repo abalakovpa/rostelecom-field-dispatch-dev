@@ -100,8 +100,8 @@ def matrix(centers, nodes, fetch):
     coords = ';'.join(f"{p['lon']},{p['lat']}" for p in pts)
     endpoint = 'http://router.project-osrm.org'
     url = endpoint+'/table/v1/driving/'+coords+'?annotations=duration,distance'
-    cache = OUT/'provenance'/'osrm_table.json'
     coord_hash = hashlib.sha256(coords.encode()).hexdigest()
+    cache = ROOT/'tmp'/'geodata-cache'/('osrm-'+coord_hash+'.json')
     if fetch:
         with urlopen(Request(url,headers={'User-Agent':'HackathonSyntheticDataset/1.0'}),timeout=55) as response:
             raw = json.load(response)
@@ -124,7 +124,8 @@ def matrix(centers, nodes, fetch):
     # Fixed synthetic 180 s for parking and walking, included once per distinct-point trip.
     durations=[[0 if i==j else math.ceil(x)+180 for j,x in enumerate(row)] for i,row in enumerate(raw['durations'])]
     distances=[[0 if i==j else math.ceil(x) for j,x in enumerate(row)] for i,row in enumerate(raw['distances'])]
-    result=dict(matrix_id='ekb-ordzhonikidzevsky-osm-v3',points=ids,durations_sec=durations,distances_m=distances)
+    locations=json.loads((OUT/'provenance'/'real_locations.json').read_text(encoding='utf-8'))
+    result=dict(matrix_id='ekb-city-osm-v1' if locations.get('city_relation') else 'ekb-ordzhonikidzevsky-osm-v3',points=ids,durations_sec=durations,distances_m=distances)
     return result, dict(endpoint=endpoint,service='table/v1/driving',
         coordinate_sha256=coord_hash,parking_and_walking_sec=180,
         data_version=raw.get('data_version'),rounding='ceil; diagonal=0',point_count=n,
@@ -287,7 +288,9 @@ def scenario(orders, day, nodes):
     return dict(date=str(day),now=iso(dt(day,8,30)),events=events,triggers=triggers)
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--fetch-osrm',action='store_true');args=parser.parse_args()
+    global OUT
+    parser=argparse.ArgumentParser();parser.add_argument('--fetch-osrm',action='store_true');parser.add_argument('--data-dir',type=Path,default=OUT);args=parser.parse_args()
+    OUT=args.data_dir.resolve()
     rng=random.Random(SEED);centers,staff,nodes=reference()
     travel,source=matrix(centers,nodes,args.fetch_osrm)
     global historical_day
@@ -302,7 +305,7 @@ def main():
     dump(OUT/'provenance'/'incidents.json',incidents)
     files=['service_centers.json','staff.json','access_nodes.json','work_types.csv','travel_matrix.json','orders_train.json','events_example.json']
     dump(OUT/'manifest.json',dict(seed=SEED,synthetic=True,days=[str(d) for d in days],
-        geography={'district':'Орджоникидзевский район','osm_relation':5819002,'locations':'provenance/real_locations.json'},
+        geography={**{k:v for k,v in json.loads((OUT/'provenance'/'real_locations.json').read_text(encoding='utf-8')).items() if k in ('city','city_relation','district','district_relation')},'locations':'provenance/real_locations.json'},
         counts={'service_centers':len(centers),'staff':len(staff),'access_nodes':len(nodes),
             'buildings':80,'orders':len(orders),'orders_per_day':350},routing=source,
         hashes={name:hashlib.sha256((OUT/name).read_bytes()).hexdigest() for name in files}))

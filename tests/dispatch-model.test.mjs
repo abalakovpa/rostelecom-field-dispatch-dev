@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {projectDay,planOverview} from '../web/dispatch-model.js';
+import {projectDay,planOverview,matchesOrderStatus,markerSummary} from '../web/dispatch-model.js';
 const at=t=>`2026-10-12T${t}:00+05:00`;
 const stop=(type,start,end,extra={})=>({type,arrival:at(start),start:at(start),end:at(end),travel_sec:0,...extra});
 
@@ -22,4 +22,20 @@ test('timeline splits travel and waits without overlap and measures utilization'
 test('risk filter contains active orders only and does not count resolved history twice',()=>{
  const day={orders:[{order_id:'1'},{order_id:'2'}],plan:{routes:[],alerts:[{type:'LATE_RISK',status:'ACTIVE',order_id:'1'},{type:'LATE_RISK',status:'ACTIVE',order_id:'1'},{type:'LATE_RISK',status:'RESOLVED',order_id:'2'},{type:'PGP_DETECTED',status:'ACTIVE',group_id:'G'}]}};
  const view=projectDay(day);assert.equal(view.counts.risk,1);assert.deepEqual([...view.risks],['1']);
+});
+
+test('map filters exclude stale plan records and terminal orders from active risks',()=>{
+ const day={orders:['A','P','C','R'].map(order_id=>({order_id})),plan:{
+ routes:[{staff_id:'S',stops:['A','P','C'].map(order_id=>stop('VISIT','11:00','12:00',{order_id}))}],
+ cancelled:[{order_id:'C'},{order_id:'gone'}],pgp_groups:[{order_ids:['P','C','missing']}],
+ alerts:['A','P','C','gone'].map(order_id=>({type:'LATE_RISK',status:'ACTIVE',order_id}))}};
+ const view=projectDay(day);
+ assert.equal(view.counts.assigned,1);assert.equal(view.counts.cancelled,1);assert.equal(view.counts.pgp,1);assert.equal(view.counts.risk,1);
+ for(const [filter,expected]of [['risk',['A']],['pgp',['P']],['cancelled',['C']],['assigned',['A']]]){
+   const found=day.orders.filter(o=>matchesOrderStatus(view,o.order_id,filter));
+   assert.deepEqual(found.map(o=>o.order_id),expected);assert.equal(found.length,view.counts[filter]);
+ }
+ const marker=markerSummary(day.orders,view);assert.deepEqual(marker.counts,{risk:1,pgp:1,cancelled:1});
+ assert.equal(marker.kind,'risk');assert.match(marker.text,/ПГП: 1/);
+ assert.equal(markerSummary([{order_id:'C'}],view).kind,'cancelled');
 });

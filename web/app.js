@@ -1,6 +1,7 @@
 import {createEventId} from './uuid.js';
-import {projectDay,planOverview,statusLabels,actionLabels} from './dispatch-model.js';
+import {projectDay,planOverview,statusLabels,actionLabels,matchesOrderStatus,markerSummary} from './dispatch-model.js';
 import {createDispatcher} from './dispatcher-view.js';
+import {MapView} from './map-view.js';
 const $=id=>document.getElementById(id);
 const state={ref:null,day:null,tab:'orders',selected:null,request:0,markers:new Map(),geometryRequest:0,status:'all',view:null};
 const techColors={PON:'#df8b4e',FTTB:'#6d58ae',XDSL:'#548f8b',DOCSIS:'#bd7897'};
@@ -14,17 +15,16 @@ async function get(url){
   if(!response.ok)throw new Error(body.error?.message||'Не удалось загрузить данные.');
   return body;
 }
-let map,ordersLayer,centersLayer;
+let map;
 function setupMap(){
-  if(!window.L){error('Не удалось загрузить библиотеку карты. Обновите страницу.');return;}
-  map=L.map('map',{zoomControl:false}).setView([56.849,60.605],12);
-  L.control.zoom({position:'bottomright'}).addTo(map);
-  const tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-  }).addTo(map);
-  let failed=0;tiles.on('tileerror',()=>{if(++failed>=3)$('tiles-warning').hidden=false;});
-  tiles.on('tileload',()=>{$('tiles-warning').hidden=true;failed=0;});
-  ordersLayer=L.layerGroup().addTo(map);centersLayer=L.layerGroup().addTo(map);
+  let failed=0;
+  try{
+    map=new MapView('map',{
+      onTileError(){if(++failed>=3)$('tiles-warning').hidden=false;},
+      onTileLoad(){$('tiles-warning').hidden=true;failed=0;},
+      onError(){error('Не удалось загрузить карту. Обновите страницу; список нарядов остаётся доступен.');}
+    });
+  }catch(e){error('Карта не запустилась. Проверьте поддержку WebGL в браузере; список нарядов остаётся доступен.');}
 }
 function popup(title,subtitle,buttonLabel,action){
   const box=node('div');box.append(node('strong','',title),node('div','',subtitle));
@@ -32,15 +32,14 @@ function popup(title,subtitle,buttonLabel,action){
   return box;
 }
 function renderCenters(){
-  if(!map)return;centersLayer.clearLayers();
+  if(!map)return;map.clearMarkers('centers');
   for(const c of state.ref.service_centers){
-    L.marker([c.lat,c.lon],{icon:L.divIcon({className:'depot-icon',html:'⌂',iconSize:[27,27],iconAnchor:[13,13]}),zIndexOffset:500})
-      .addTo(centersLayer).bindPopup(popup(c.name,c.address));
+    map.marker('centers',{lat:c.lat,lon:c.lon,className:'depot-icon',text:'⌂',title:c.name,zIndex:500,popup:popup(c.name,c.address)});
   }
 }
 function filteredOrders(){
   const query=$('search').value.trim().toLocaleLowerCase('ru');const tech=$('technology').value;const profile=$('profile').value;
-  return (state.day?.orders||[]).filter(o=>(state.status==='all'||(state.status==='risk'?state.view.risks.has(o.order_id):state.status==='assigned'?state.view.assignments.has(o.order_id):state.view.status(o.order_id)===state.status))&&(!tech||o.technology===tech)&&(!profile||work(o).profiles.includes(profile))&&
+  return (state.day?.orders||[]).filter(o=>matchesOrderStatus(state.view,o.order_id,state.status)&&(!tech||o.technology===tech)&&(!profile||work(o).profiles.includes(profile))&&
     (!query||[o.order_id,o.building_id,o.address,o.access_node_id].some(v=>v.toLocaleLowerCase('ru').includes(query))));
 }
 function filteredStaff(){
@@ -50,22 +49,23 @@ function filteredStaff(){
 }
 function work(order){return state.ref.work_types.find(w=>w.code===order.work_type_code)||{name:order.work_type_code,duration_min:0,profiles:[]};}
 function fit(){
-  if(!map)return;const points=state.ref?.service_centers.map(c=>[c.lat,c.lon])||[];
-  for(const o of filteredOrders())points.push([o.lat,o.lon]);
-  if(points.length)map.fitBounds(L.latLngBounds(points),{padding:[45,65],maxZoom:14});
+  if(!map)return;const points=state.ref?.service_centers.map(c=>[c.lon,c.lat])||[];
+  for(const o of filteredOrders())points.push([o.lon,o.lat]);
+  map.fitPoints(points);
 }
 function renderMarkers(orders){
-  if(!map)return;ordersLayer.clearLayers();state.markers.clear();
+  if(!map)return;map.clearMarkers('orders');state.markers.clear();
   const groups=new Map();for(const o of orders){if(!groups.has(o.building_id))groups.set(o.building_id,[]);groups.get(o.building_id).push(o);}
   $('map-count').textContent=`${groups.size} адресов`;
   for(const [id,group] of groups){
     const o=group[0];const repeated=group.some(o=>o.is_repeat);const focused=group.some(o=>o.order_id===state.selected);
-    const marker=L.marker([o.lat,o.lon],{title:`${o.address}: ${group.length} нарядов`,
-      icon:L.divIcon({className:`order-icon${repeated?' repeat':''}${focused?' focused':''}`,html:String(group.length),iconSize:[23,23],iconAnchor:[11,11]})}).addTo(ordersLayer);
-    marker.bindPopup(popup(o.address,`${id} · ${group.length} нарядов`,group.length===1?'Открыть наряд':'Показать наряды дома',()=>{
+    const summary=markerSummary(group,state.view);
+    const marker=map.marker('orders',{lat:o.lat,lon:o.lon,title:`${o.address}: ${group.length} нарядов${summary.text?' · '+summary.text:''}`,
+      className:`order-icon marker-${summary.kind}${repeated?' repeat':''}${focused?' focused':''}`,text:String(group.length),
+      popup:popup(o.address,`${id} · ${group.length} нарядов${summary.text?' · '+summary.text:''}`,group.length===1?'Открыть наряд':'Показать наряды дома',()=>{
       if(group.length===1)selectOrder(o);
       else {$('search').value=id;setTab('orders');render();map.closePopup();}
-    }));state.markers.set(id,marker);
+    })});state.markers.set(id,marker);
   }
 }
 function orderCard(order){
@@ -96,7 +96,7 @@ function staffCard(person){
     box.append(close,node('div','detail-id',person.staff_id),node('h2','',person.display_name||person.staff_id),node('p','',person.technologies.join(' · ')),
       detailRow('Сервисный центр',person.service_center_id),detailRow('Смена',`${person.shift_start.slice(0,5)}–${person.shift_end.slice(0,5)}`),
       node('p','', 'Положение показано по закреплённому СЦ. Текущая GPS-позиция не поступала.'));
-    if(center&&map)map.flyTo([center.lat,center.lon],14,{duration:.6});
+    if(center&&map)map.focus([center.lon,center.lat],14);
   });return card;
 }
 function detailRow(label,value){const row=node('div','detail-row');row.append(node('span','',label),node('span','',value));return row;}
@@ -118,12 +118,20 @@ function selectOrder(order){
   if(assignment)box.append(detailRow('Исполнитель',assignment.staff),detailRow('Назначенный визит',`${fullTime(assignment.stop.start)}–${time(assignment.stop.end)}`));
   const reason=state.view.unassigned.get(order.order_id);
   if(reason)box.append(node('div','unassigned-detail',`${reason.reason_text} ${actionLabels[reason.suggested_action]||''}`));
-  const group=state.view.groups.get(order.order_id);if(group)box.append(node('div','unassigned-detail',`${group.group_id}: ${actionLabels[group.action]||group.action}`));
-  const cancelled=state.view.cancelled.get(order.order_id);if(cancelled)box.append(detailRow('Отменён в',time(cancelled.cancelled_at)));
+  const group=state.view.groups.get(order.order_id);if(group)box.append(node('div','unassigned-detail',`ПГП · ${group.group_id} · узел ${group.access_node_id} · ${group.order_ids.length} нарядов. ${actionLabels[group.action]||group.action}`));
+  const cancelled=state.view.cancelled.get(order.order_id);if(cancelled)box.append(detailRow('Отменён в',fullTime(cancelled.cancelled_at)),node('p','status-tag status-cancelled','Отменённый наряд не требует выезда'));
+  for(const alert of state.view.riskAlerts.get(order.order_id)||[]){
+    const facts=node('div','unassigned-detail risk-detail');facts.append(node('strong','','Риск опоздания'),node('p','',alert.message));
+    if(alert.forecast_start)facts.append(detailRow('Прогноз начала',fullTime(alert.forecast_start)));
+    if(alert.lateness_min!=null)facts.append(detailRow('Опоздание',`${alert.lateness_min} мин`));
+    if(alert.warning_deadline)facts.append(detailRow('Предупредить до',fullTime(alert.warning_deadline)));
+    facts.append(node('p','',actionLabels[alert.suggested_action]||alert.suggested_action||''));box.append(facts);
+  }
   dispatcher.highlight();
-  if(map)map.flyTo([order.lat,order.lon],15,{duration:.6});
+  if(map)map.focus([order.lon,order.lat],15);
 }
 function render(){
+  if(state.ref&&state.day)state.view=projectDay(state.day,state.ref.staff);
   let daily=document.getElementById('daily-order-counts');
   if(!daily){daily=node('div','statusbar');daily.id='daily-order-counts';document.querySelector('.statusbar').after(daily);}
   const dailyCounts=state.view?.counts;
@@ -142,7 +150,11 @@ function render(){
   $('list-count').textContent=state.day.orders.length;
   $('results-text').textContent=state.tab==='orders'?`Найдено нарядов: ${rows.length}`:`Сотрудников: ${rows.length}`;
   $('list').replaceChildren(...rows.map(state.tab==='orders'?orderCard:staffCard));
-  if(!rows.length)$('list').append(node('div','empty','Ничего не найдено. Измените поиск или сбросьте фильтры.'));
+  if(!rows.length){
+    const labels={risk:'Нарядов с активным риском опоздания',pgp:'Нарядов в ПГП',cancelled:'Отменённых нарядов'};
+    const message=state.tab==='orders'&&labels[state.status]?`${labels[state.status]} по выбранной дате и фильтрам нет.`:'Ничего не найдено. Измените поиск или сбросьте фильтры.';
+    $('list').append(node('div','empty',message));
+  }
   renderMarkers(orders);
   dispatcher.highlight();
 }
@@ -154,8 +166,8 @@ function setTab(tab){
 async function loadDay(){
   const seq=++state.request;error('');$('refresh').disabled=true;
   $('list').replaceChildren(node('div','empty','Загружаем данные дня…'));state.day=null;state.selected=null;$('details').hidden=true;
-  state.view=null;state.geometryRequest++;routeLayer?.clearLayers();dispatcher.loading();
-  if(ordersLayer)ordersLayer.clearLayers();$('total').textContent='—';$('repeat-count').textContent='—';
+  state.view=null;state.geometryRequest++;map?.clearRoute();dispatcher.loading();
+  map?.clearMarkers('orders');$('total').textContent='—';$('repeat-count').textContent='—';
   try {
     const day=await get('/api/ui/days/'+encodeURIComponent($('day').value));if(seq!==state.request)return;
     state.day=day;$('total').textContent=day.orders.length;$('repeat-count').textContent=day.orders.filter(o=>o.is_repeat).length;
@@ -166,7 +178,7 @@ async function loadDay(){
     $('plan-note').textContent=day.plan?`Назначено ${overview.visits} · Не назначено ${overview.unassigned} · ПГП ${overview.pgp}`:'Готов к первому расчёту';
     updateRouteOptions();
     updateEventExample();
-    render();dispatcher.render();fit();
+    render();dispatcher.render();map?.showCity();
   }catch(e){if(seq===state.request){error(e.message);$('list').replaceChildren(node('div','empty','Данные не загружены. Нажмите «Обновить данные» после восстановления подключения.'));}}
   finally{if(seq===state.request)$('refresh').disabled=false;}
 }
@@ -186,7 +198,7 @@ async function bootstrap(){
 $('refresh').onclick=()=>state.ref?loadDay():bootstrap();$('day').onchange=loadDay;
 for(const id of ['search','technology','profile'])$(id).addEventListener(id==='search'?'input':'change',()=>{state.selected=null;$('details').hidden=true;render();});
 $('reset').onclick=()=>{for(const id of ['search','technology','profile'])$(id).value='';state.status='all';state.selected=null;$('details').hidden=true;render();dispatcher.syncStatus();fit();};
-$('orders-tab').onclick=()=>setTab('orders');$('staff-tab').onclick=()=>setTab('staff');$('fit').onclick=fit;
+$('orders-tab').onclick=()=>setTab('orders');$('staff-tab').onclick=()=>setTab('staff');$('fit').onclick=fit;$('show-city').onclick=()=>map?.showCity();
 setupMap();bootstrap();
 
 function assigned(id){
@@ -196,9 +208,8 @@ const planControls=node('div','plan-controls');
 const buildButton=node('button','build-button','Сформировать план');buildButton.id='build-plan';
 const routeChoice=node('select');routeChoice.id='route-choice';routeChoice.setAttribute('aria-label','Маршрут сотрудника');
 planControls.append(buildButton,routeChoice);document.querySelector('.workspace').before(planControls);
-let routeLayer=map?L.layerGroup().addTo(map):null;
 function updateRouteOptions(){
-  state.geometryRequest++;if(routeLayer)routeLayer.clearLayers();
+  state.geometryRequest++;map?.clearRoute();
   routeChoice.replaceChildren(node('option','','Выберите маршрут сотрудника'));routeChoice.firstChild.value='';
   const routes=(state.day?.plan?.routes||[]).filter(r=>r.stops.some(s=>s.type==='VISIT'));
   for(const route of routes){const visits=route.stops.filter(s=>s.type==='VISIT');const option=node('option','',`${route.staff_id} · ${visits.length} визитов`);option.value=route.staff_id;routeChoice.append(option);}
@@ -215,35 +226,29 @@ buildButton.onclick=async()=>{
   }catch(e){error(e.message);}finally{buildButton.disabled=false;$('day').disabled=false;buildButton.textContent='Обновить план';}
 };
 const dispatcher=createDispatcher({state,node,time,
-  onStatus(status){state.status=status;state.selected=null;$('details').hidden=true;setTab('orders');dispatcher.syncStatus();},
+  onStatus(status){state.status=status;state.geometryRequest++;map?.clearRoute();$('route-choice').value='';state.selected=null;$('details').hidden=true;setTab('orders');dispatcher.syncStatus();fit();},
   focusOrder(id){const order=state.day?.orders.find(o=>o.order_id===id);if(!order)return;state.status='all';for(const key of ['technology','profile'])$(key).value='';$('search').value=id;setTab('orders');dispatcher.syncStatus();selectOrder(order);document.querySelector('.workspace').scrollIntoView({behavior:'smooth',block:'start'});},
   chooseRoute(id){routeChoice.value=id;dispatcher.highlight();if(routeChoice.value)routeChoice.onchange();document.querySelector('.workspace').scrollIntoView({behavior:'smooth',block:'start'});}
 });
 routeChoice.addEventListener('change',()=>dispatcher.highlight());
 dispatcher.render();
 routeChoice.onchange=async()=>{
-  const seq=++state.geometryRequest;routeLayer?.clearLayers();if(!routeChoice.value||!state.day)return;
+  const seq=++state.geometryRequest;map?.clearRoute();if(!routeChoice.value||!state.day||!map)return;
   const route=state.day.plan.routes.find(r=>r.staff_id===routeChoice.value);error('');
+  let number=0;
+  for(const stop of route.stops){if(stop.type!=='VISIT')continue;number++;
+    const order=state.day.orders.find(o=>o.order_id===stop.order_id);
+    if(!order)continue;
+    map.marker('route',{lat:order.lat,lon:order.lon,className:'route-number',text:String(number),zIndex:1100,
+      title:`Визит ${number}: ${order.address}`,popup:popup(order.address,`${time(stop.start)}–${time(stop.end)} · ${stop.order_id}`,'Открыть наряд',()=>selectOrder(order))});
+  }
   try{
     const result=await get(`/api/ui/days/${$('day').value}/routes/${route.staff_id}/geometry`);
     if(seq!==state.geometryRequest)return;
     if(result.staff_id!==route.staff_id||result.plan_version!==state.day.plan.plan_version){
       throw new Error('План изменился. Обновите данные и выберите маршрут повторно.');
     }
-    const palette=['#159fe8','#20bc8b','#ef638a','#69b844','#35bbc6','#e2ac21','#6294ef','#e777b0'];
-    const line=L.featureGroup().addTo(routeLayer);
-    for(const [i,segment] of result.segments.entries()){
-      L.geoJSON(segment.geometry,{interactive:false,style:{color:'#ffffff',weight:5,opacity:.95,dashArray:'6 7',lineCap:'round',lineJoin:'round'}}).addTo(line);
-      L.geoJSON(segment.geometry,{style:{color:palette[i%palette.length],weight:2.5,opacity:.95,dashArray:'6 7',lineCap:'round',lineJoin:'round'}})
-        .bindTooltip(`${segment.from_stop} → ${segment.to_stop}`,{sticky:true}).addTo(line);
-    }
-    let number=0;
-    for(const stop of route.stops){if(stop.type!=='VISIT')continue;number++;
-      const order=state.day.orders.find(o=>o.order_id===stop.order_id);
-      L.marker([order.lat,order.lon],{zIndexOffset:1100,icon:L.divIcon({className:'route-number',html:String(number),iconSize:[26,26]})})
-        .addTo(routeLayer).bindPopup(popup(order.address,`${time(stop.start)}–${time(stop.end)} · ${stop.order_id}`,'Открыть наряд',()=>selectOrder(order)));
-    }
-    if(line.getBounds().isValid())map.fitBounds(line.getBounds(),{padding:[35,35]});
+    map.showRoute(result.segments);
   }catch(e){if(seq===state.geometryRequest)error(e.message);}
 };
 updateRouteOptions();
