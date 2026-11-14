@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "day": "2026-10-12",
+  "checks": [
+    "real event insert",
+    "plan version insert",
+    "duplicate idempotency",
+    "new order insert",
+    "complete rollback"
+  ],
+  "tick_ms": 2859,
+  "new_order_ms": 2750,
+  "user_data_unchanged": true
+}

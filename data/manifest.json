@@ -1,0 +1,48 @@
+{
+  "seed": 20261113,
+  "synthetic": true,
+  "days": [
+    "2026-10-12",
+    "2026-10-13",
+    "2026-10-14",
+    "2026-10-15",
+    "2026-10-16",
+    "2026-10-19",
+    "2026-10-20",
+    "2026-10-21",
+    "2026-10-22",
+    "2026-10-23"
+  ],
+  "geography": {
+    "district": "Орджоникидзевский район",
+    "osm_relation": 5819002,
+    "locations": "provenance/real_locations.json"
+  },
+  "counts": {
+    "service_centers": 5,
+    "staff": 40,
+    "access_nodes": 20,
+    "buildings": 80,
+    "orders": 3500,
+    "orders_per_day": 350
+  },
+  "routing": {
+    "endpoint": "http://router.project-osrm.org",
+    "service": "table/v1/driving",
+    "coordinate_sha256": "42a0c19dca0032fe01d556d3064e990fad09b004c278cc9c4679b147bdd330d4",
+    "parking_and_walking_sec": 180,
+    "data_version": null,
+    "rounding": "ceil; diagonal=0",
+    "point_count": 85,
+    "max_snap_distance_m": 469.3954738
+  },
+  "hashes": {
+    "service_centers.json": "cbdcb465950127396fcbafb51223c0452919151b16f06e789ad220e9e292e92e",
+    "staff.json": "2e92fae68e15ab9d384f6c1d44c01ae73038ff7e3bddc58461b069a5a1b9b0f5",
+    "access_nodes.json": "61bf221c143f55482f0e0c13aff0d2d62b6951cec1c560030fe66664e332a04e",
+    "work_types.csv": "8caff720bcde2e89d3070f6dc1566b9a551cb30bb285a3cda17bc412093f6f3b",
+    "travel_matrix.json": "70d7c1245c0c1e181f59a9c50330b046b7736b199c870cacd876475de73a5266",
+    "orders_train.json": "7e8f339e6b02efe7c0a7fb8d126a4eb586d5f728ac284fe1bf2177e7d7f46296",
+    "events_example.json": "b58dca77d02a4215c2744aedb65aeb953ae16d3007eddfe35c43c87a76cab0fc"
+  }
+}

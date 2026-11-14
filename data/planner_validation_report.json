@@ -1,0 +1,15 @@
+{
+  "summary": {
+    "orders_total": 350,
+    "visits_planned": 235,
+    "unassigned": 112,
+    "pgp_orders": 3,
+    "cancelled": 0,
+    "travel_sec_total": 105849
+  },
+  "computation_ms": 19719,
+  "geometry_staff": "ST-001",
+  "geometry_vertices": 615,
+  "postgres_roundtrip": "PASS",
+  "openapi_plan_schema": "PASS"
+}

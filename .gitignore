@@ -9,3 +9,7 @@ __pycache__/
 node_modules/
 dist/
 coverage/
+
+# Local runtime and generated scenario snapshots
+tmp/
+data/qa/

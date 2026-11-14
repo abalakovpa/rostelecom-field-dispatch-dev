@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "python_tests": 32,
+  "node_tests": 3,
+  "postgres_integration": true,
+  "days": 10,
+  "orders": 3500,
+  "plan_contract": "passed",
+  "plan_constraints": "passed",
+  "event_contract": "passed",
+  "final_plan_version": 2,
+  "original_files_verified": 93,
+  "original_files_changed": [],
+  "original_database_modified": false,
+  "copy_url": "http://127.0.0.1:8083"
+}

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#452ba6"><title>Магистраль — диспетчерская</title>
+  <link rel="stylesheet" href="/static/vendor/leaflet.css">
+  <link rel="stylesheet" href="/static/styles.css?v=dispatcher-2">
+  <link rel="stylesheet" href="/static/planner.css?v=dispatcher-2">
+  <link rel="stylesheet" href="/static/dispatcher.css?v=dispatcher-2">
+  <script defer src="/static/vendor/leaflet.js"></script>
+  <script type="module" src="/static/app.js?v=dispatcher-2"></script>
+</head>
+<body>
+  <aside class="rail">
+    <a class="brand" href="/" aria-label="Магистраль, главная"><span class="brand-symbol">м<span>↗</span></span><span>магистраль<small>Умная диспетчеризация</small></span></a>
+    <div class="rail-label">РАБОЧЕЕ ПРОСТРАНСТВО</div>
+    <div class="nav-item active"><span>◈</span>Карта и наряды<i></i></div>
+    <div class="rail-note"><span class="note-icon">↗</span><strong>План смены начинается здесь</strong><p>Сервисные центры, команда и все адреса дня — на одной карте.</p></div>
+    <div class="rail-bottom"><span class="city-dot"></span><div>Екатеринбург<small>Часовой пояс UTC+5</small></div><span>⌁</span></div>
+  </aside>
+  <main>
+    <header class="topbar"><div class="breadcrumbs">Орджоникидзевский район <span>/</span> Обзор дня</div><div id="source" class="source">Подключение…</div><div class="avatar" aria-label="Диспетчер">Д</div></header>
+    <section class="heading"><div><div class="eyebrow">ОПЕРАТИВНЫЙ ОБЗОР</div><h1>Всё начинается с маршрута<span>.</span></h1><p>Видеть весь день. Держать каждый адрес в фокусе.</p></div><div class="day-controls"><label for="day">Дата смены</label><div class="day-row"><select id="day" disabled aria-label="Дата смены"></select><button id="refresh" class="square-button" title="Обновить данные" aria-label="Обновить данные">↻</button></div></div></section>
+    <div id="error" class="error" role="alert" hidden></div>
+    <section class="metrics" aria-label="Показатели дня">
+      <article><div><span>Наряды на день</span><strong id="total">—</strong><small>Загружены в систему</small></div><span class="metric-icon orange">▤</span></article>
+      <article><div><span>Сотрудники</span><strong id="staff-count">—</strong><small>В справочнике команды</small></div><span class="metric-icon violet">♧</span></article>
+      <article><div><span>Сервисные центры</span><strong id="center-count">—</strong><small>Старт и возврат в СЦ</small></div><span class="metric-icon green">⌂</span></article>
+      <article><div><span>Повторные обращения</span><strong id="repeat-count">—</strong><small>Повышенный приоритет</small></div><span class="metric-icon pink">↺</span></article>
+    </section>
+    <section class="workspace" aria-label="Карта и список нарядов">
+      <aside class="orders-panel">
+        <div class="panel-tabs"><button id="orders-tab" class="selected" aria-pressed="true">Наряды <span id="list-count">0</span></button><button id="staff-tab" aria-pressed="false">Команда</button></div>
+        <div class="filters"><label class="search"><span>⌕</span><input id="search" type="search" placeholder="Адрес, номер наряда или дома" aria-label="Поиск по адресу, наряду или дому"></label><div class="filter-row"><select id="technology" aria-label="Технология"><option value="">Все технологии</option><option>PON</option><option>FTTB</option><option>XDSL</option><option>DOCSIS</option></select><select id="profile" aria-label="Профиль работ"><option value="">Все профили</option><option value="INSTALL">Инсталляция</option><option value="LTP3">3ЛТП</option></select></div><div class="list-heading"><span id="results-text">Загружаем адреса…</span><button id="reset">Сбросить</button></div></div>
+        <div id="list" class="order-list" aria-live="polite"></div>
+        <div class="panel-footer"><span class="tiny-dot"></span><span id="model-time">Модельное время —</span></div>
+      </aside>
+      <section class="map-panel" aria-label="Карта Екатеринбурга">
+        <div id="map"></div>
+        <div class="map-heading"><span class="live-dot"></span><span>ЕКАТЕРИНБУРГ</span><span class="map-heading-divider"></span><span id="map-count">Адреса дня</span></div>
+        <button id="fit" class="fit-button" title="Показать все точки">⌖ <span>Все точки</span></button>
+        <div id="tiles-warning" class="tiles-warning" hidden>Подложка карты недоступна. Точки и список работают; проверьте интернет.</div>
+        <div class="map-legend"><span><i class="legend-dot orange-dot"></i>Наряд</span><span><i class="legend-dot repeat-dot"></i>Повтор</span><span><i class="legend-depot"></i>Сервисный центр</span></div>
+        <div id="details" class="details" hidden></div>
+      </section>
+    </section>
+    <footer class="statusbar"><span id="plan-status">План ещё не построен</span><span id="plan-note">Маршруты появятся после подключения планировщика</span></footer>
+  </main>
+</body>
+</html>

@@ -1,0 +1,35 @@
+{
+  "status": "PASS",
+  "engine": "PostgreSQL 18.6 (PGlite 0.5.16) on wasm32-unknown-emscripten, compiled by emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.13 (e13ee988ce3d87a738dd8f3661d02223308c412a), 32-bit",
+  "counts": [
+    {
+      "entity": "service_centers",
+      "count": 5
+    },
+    {
+      "entity": "staff",
+      "count": 40
+    },
+    {
+      "entity": "orders",
+      "count": 3500
+    },
+    {
+      "entity": "planning_days",
+      "count": 10
+    },
+    {
+      "entity": "training_orders",
+      "count": 3500
+    }
+  ],
+  "checks": [
+    "migration execution",
+    "full seed import",
+    "repeat import rejection and rollback",
+    "equipment domain checks",
+    "foreign key check",
+    "training fact isolation"
+  ],
+  "limitation": "Embedded PostgreSQL via PGlite; Docker and pgAdmin connection not exercised"
+}
