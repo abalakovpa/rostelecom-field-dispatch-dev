@@ -1,0 +1,160 @@
+{
+  "date": "2026-10-12",
+  "now": "2026-10-12T08:30:00+05:00",
+  "events": [
+    {
+      "event_id": "EV-20261012-0001",
+      "type": "TIME_TICK",
+      "timestamp": "2026-10-12T09:00:00+05:00"
+    },
+    {
+      "event_id": "EV-20261012-0002",
+      "type": "NEW_ORDER",
+      "timestamp": "2026-10-12T10:00:00+05:00",
+      "order": {
+        "order_id": "ORD-20261012-0351",
+        "work_type_code": "REPAIR",
+        "technology": "DOCSIS",
+        "building_id": "B-00077",
+        "address": "Екатеринбург, улица Молодёжи, 3",
+        "lat": 56.90348405,
+        "lon": 60.57342419125376,
+        "building_type": "PRIVATE",
+        "requires_height": true,
+        "access_node_id": "AN-0020",
+        "registered_at": "2026-10-12T10:00:00+05:00",
+        "slot": {
+          "start": "2026-10-12T15:00:00+05:00",
+          "end": "2026-10-12T17:00:00+05:00"
+        },
+        "latest_start": "2026-10-12T17:00:00+05:00",
+        "deadline": "2026-10-13T10:00:00+05:00",
+        "required_equipment": {
+          "ONT": 0,
+          "ROUTER": 1,
+          "STB": 0
+        },
+        "is_repeat": false,
+        "previous_order_id": null
+      }
+    },
+    {
+      "event_id": "EV-20261012-0003",
+      "type": "NEW_ORDER",
+      "timestamp": "2026-10-12T10:20:00+05:00",
+      "order": {
+        "order_id": "ORD-20261012-0352",
+        "work_type_code": "REPAIR",
+        "technology": "DOCSIS",
+        "building_id": "B-00078",
+        "address": "Екатеринбург, Кировградская улица, 136",
+        "lat": 56.900655799999996,
+        "lon": 60.57163576032255,
+        "building_type": "PRIVATE",
+        "requires_height": false,
+        "access_node_id": "AN-0020",
+        "registered_at": "2026-10-12T10:20:00+05:00",
+        "slot": {
+          "start": "2026-10-12T15:00:00+05:00",
+          "end": "2026-10-12T17:00:00+05:00"
+        },
+        "latest_start": "2026-10-12T17:00:00+05:00",
+        "deadline": "2026-10-13T10:20:00+05:00",
+        "required_equipment": {
+          "ONT": 0,
+          "ROUTER": 1,
+          "STB": 0
+        },
+        "is_repeat": false,
+        "previous_order_id": null
+      }
+    },
+    {
+      "event_id": "EV-20261012-0004",
+      "type": "NEW_ORDER",
+      "timestamp": "2026-10-12T10:40:00+05:00",
+      "order": {
+        "order_id": "ORD-20261012-0353",
+        "work_type_code": "REPAIR",
+        "technology": "DOCSIS",
+        "building_id": "B-00079",
+        "address": "Екатеринбург, Связной переулок, 10",
+        "lat": 56.907527,
+        "lon": 60.6070639,
+        "building_type": "PRIVATE",
+        "requires_height": true,
+        "access_node_id": "AN-0020",
+        "registered_at": "2026-10-12T10:40:00+05:00",
+        "slot": {
+          "start": "2026-10-12T15:00:00+05:00",
+          "end": "2026-10-12T17:00:00+05:00"
+        },
+        "latest_start": "2026-10-12T17:00:00+05:00",
+        "deadline": "2026-10-13T10:40:00+05:00",
+        "required_equipment": {
+          "ONT": 0,
+          "ROUTER": 1,
+          "STB": 0
+        },
+        "is_repeat": false,
+        "previous_order_id": null
+      }
+    },
+    {
+      "event_id": "EV-20261012-0005",
+      "type": "ORDER_CANCELLED",
+      "timestamp": "2026-10-12T11:00:00+05:00",
+      "order_id": "ORD-20261012-0005",
+      "reason": "CUSTOMER_REQUEST"
+    },
+    {
+      "event_id": "EV-20261012-0006",
+      "type": "STAFF_UNAVAILABLE",
+      "timestamp": "2026-10-12T11:30:00+05:00",
+      "staff_id": "ST-001",
+      "until": "2026-10-12T14:00:00+05:00",
+      "reason": "VEHICLE_BREAKDOWN"
+    },
+    {
+      "event_id": "EV-20261012-0007",
+      "type": "TIME_TICK",
+      "timestamp": "2026-10-12T14:00:00+05:00"
+    },
+    {
+      "event_id": "EV-20261012-0008",
+      "type": "STAFF_UNAVAILABLE",
+      "timestamp": "2026-10-12T16:00:00+05:00",
+      "staff_id": "ST-002",
+      "until": null,
+      "reason": "ILLNESS"
+    },
+    {
+      "event_id": "EV-20261012-0009",
+      "type": "TIME_TICK",
+      "timestamp": "2026-10-12T20:30:00+05:00"
+    }
+  ],
+  "triggers": [
+    {
+      "trigger_id": "TR-20261012-01",
+      "type": "VISIT_DELAYED",
+      "order_id": "ORD-20261012-0006",
+      "fire_after_start_min": 15,
+      "extra_duration_min": 30
+    },
+    {
+      "trigger_id": "TR-20261012-02",
+      "type": "ORDER_TRANSFERRED",
+      "order_id": "ORD-20261012-0008",
+      "fire_after_start_min": 10,
+      "transferred_to": "STATION_EQUIPMENT"
+    },
+    {
+      "trigger_id": "TR-20261012-03",
+      "type": "ORDER_TRANSFERRED",
+      "order_id": "ORD-20261012-0009",
+      "fire_after_start_min": 10,
+      "transferred_to": "TRUNK_CABLE"
+    }
+  ]
+}

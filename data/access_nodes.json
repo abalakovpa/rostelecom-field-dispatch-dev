@@ -1,0 +1,922 @@
+[
+  {
+    "access_node_id": "AN-0001",
+    "node_type": "OLT",
+    "technology": "PON",
+    "name": "Синтетический узел 1/PON",
+    "lat": 56.90322755,
+    "lon": 60.62290625180552,
+    "buildings": [
+      {
+        "building_id": "B-00001",
+        "address": "Екатеринбург, Шефская улица, 85",
+        "lat": 56.90322755,
+        "lon": 60.62290625180552,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-01"
+      },
+      {
+        "building_id": "B-00002",
+        "address": "Екатеринбург, Стахановская улица, 1",
+        "lat": 56.890129849999994,
+        "lon": 60.59219145121053,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-01"
+      },
+      {
+        "building_id": "B-00003",
+        "address": "Екатеринбург, Донбасская улица, 11",
+        "lat": 56.89127945,
+        "lon": 60.56912284152602,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-01"
+      },
+      {
+        "building_id": "B-00004",
+        "address": "Екатеринбург, переулок Никитина, 129",
+        "lat": 56.906930200000005,
+        "lon": 60.58084865000001,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-01"
+      }
+    ]
+  },
+  {
+    "access_node_id": "AN-0002",
+    "node_type": "SWITCH",
+    "technology": "FTTB",
+    "name": "Синтетический узел 1/FTTB",
+    "lat": 56.888806,
+    "lon": 60.5974500784925,
+    "buildings": [
+      {
+        "building_id": "B-00005",
+        "address": "Екатеринбург, улица Ильича, 12",
+        "lat": 56.888806,
+        "lon": 60.5974500784925,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-01"
+      },
+      {
+        "building_id": "B-00006",
+        "address": "Екатеринбург, улица Бакинских Комиссаров, 25",
+        "lat": 56.89771795,
+        "lon": 60.576094690273436,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-01"
+      },
+      {
+        "building_id": "B-00007",
+        "address": "Екатеринбург, улица Старых Большевиков, 3А",
+        "lat": 56.88546085,
+        "lon": 60.63583614270348,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-01"
+      },
+      {
+        "building_id": "B-00008",
+        "address": "Екатеринбург, улица Бабушкина, 20",
+        "lat": 56.88857874999999,
+        "lon": 60.622741472194484,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-01"
+      }
+    ]
+  },
+  {
+    "access_node_id": "AN-0003",
+    "node_type": "DSLAM",
+    "technology": "XDSL",
+    "name": "Синтетический узел 1/XDSL",
+    "lat": 56.905129349999996,
+    "lon": 60.64321890094659,
+    "buildings": [
+      {
+        "building_id": "B-00009",
+        "address": "Екатеринбург, Даурская улица, 49",
+        "lat": 56.905129349999996,
+        "lon": 60.64321890094659,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-01"
+      },
+      {
+        "building_id": "B-00010",
+        "address": "Екатеринбург, Грунтовая улица, 10",
+        "lat": 56.93993135,
+        "lon": 60.59084576288632,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-01"
+      },
+      {
+        "building_id": "B-00011",
+        "address": "Екатеринбург, Ташкентская улица, 36",
+        "lat": 56.9130222,
+        "lon": 60.594690549999996,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-01"
+      },
+      {
+        "building_id": "B-00012",
+        "address": "Екатеринбург, улица Уральских Рабочих, 122",
+        "lat": 56.9043044,
+        "lon": 60.57757834633621,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-01"
+      }
+    ]
+  },
+  {
+    "access_node_id": "AN-0004",
+    "node_type": "CMTS",
+    "technology": "DOCSIS",
+    "name": "Синтетический узел 1/DOCSIS",
+    "lat": 56.90629715,
+    "lon": 60.641796580796374,
+    "buildings": [
+      {
+        "building_id": "B-00013",
+        "address": "Екатеринбург, Каширская улица, 117",
+        "lat": 56.90629715,
+        "lon": 60.641796580796374,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-01"
+      },
+      {
+        "building_id": "B-00014",
+        "address": "Екатеринбург, переулок Никитина, 117",
+        "lat": 56.90639095,
+        "lon": 60.582473912655274,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-01"
+      },
+      {
+        "building_id": "B-00015",
+        "address": "Екатеринбург, Ржевская улица, 49",
+        "lat": 56.887397899999996,
+        "lon": 60.56017913813976,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-01"
+      },
+      {
+        "building_id": "B-00016",
+        "address": "Екатеринбург, улица Рабкоров, 128/128а",
+        "lat": 56.91225300000001,
+        "lon": 60.60733593160147,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-01"
+      }
+    ]
+  },
+  {
+    "access_node_id": "AN-0005",
+    "node_type": "OLT",
+    "technology": "PON",
+    "name": "Синтетический узел 2/PON",
+    "lat": 56.8931207,
+    "lon": 60.59600110968428,
+    "buildings": [
+      {
+        "building_id": "B-00017",
+        "address": "Екатеринбург, Стахановская улица, 27",
+        "lat": 56.8931207,
+        "lon": 60.59600110968428,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-02"
+      },
+      {
+        "building_id": "B-00018",
+        "address": "Екатеринбург, улица Краснофлотцев, 34",
+        "lat": 56.89154425,
+        "lon": 60.637725519621355,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-02"
+      },
+      {
+        "building_id": "B-00019",
+        "address": "Екатеринбург, улица Кобозева, 102",
+        "lat": 56.902484650000005,
+        "lon": 60.641093719203624,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-02"
+      },
+      {
+        "building_id": "B-00020",
+        "address": "Екатеринбург, Кировградская улица, 101",
+        "lat": 56.9051476,
+        "lon": 60.56053785,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-02"
+      }
+    ]
+  },
+  {
+    "access_node_id": "AN-0006",
+    "node_type": "SWITCH",
+    "technology": "FTTB",
+    "name": "Синтетический узел 2/FTTB",
+    "lat": 56.8866462,
+    "lon": 60.62485726682365,
+    "buildings": [
+      {
+        "building_id": "B-00021",
+        "address": "Екатеринбург, улица Бабушкина, 14",
+        "lat": 56.8866462,
+        "lon": 60.62485726682365,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-02"
+      },
+      {
+        "building_id": "B-00022",
+        "address": "Екатеринбург, проспект Космонавтов, 108/3",
+        "lat": 56.91878845,
+        "lon": 60.61284014537761,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-02"
+      },
+      {
+        "building_id": "B-00023",
+        "address": "Екатеринбург, улица 40-летия Октября, 63",
+        "lat": 56.90137855,
+        "lon": 60.5950885,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-02"
+      },
+      {
+        "building_id": "B-00024",
+        "address": "Екатеринбург, улица Фрезеровщиков, 86",
+        "lat": 56.907420849999994,
+        "lon": 60.636108750000005,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-02"
+      }
+    ]
+  },
+  {
+    "access_node_id": "AN-0007",
+    "node_type": "DSLAM",
+    "technology": "XDSL",
+    "name": "Синтетический узел 2/XDSL",
+    "lat": 56.88573915,
+    "lon": 60.56043915,
+    "buildings": [
+      {
+        "building_id": "B-00025",
+        "address": "Екатеринбург, Орловская улица, 57",
+        "lat": 56.88573915,
+        "lon": 60.56043915,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-02"
+      },
+      {
+        "building_id": "B-00026",
+        "address": "Екатеринбург, Даниловская улица, 21",
+        "lat": 56.90146095,
+        "lon": 60.63966331920363,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-02"
+      },
+      {
+        "building_id": "B-00027",
+        "address": "Екатеринбург, улица Стачек, 58",
+        "lat": 56.8966978,
+        "lon": 60.61886095,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-02"
+      },
+      {
+        "building_id": "B-00028",
+        "address": "Екатеринбург, Еловский переулок, 13",
+        "lat": 56.911325500000004,
+        "lon": 60.604753743238334,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-02"
+      }
+    ]
+  },
+  {
+    "access_node_id": "AN-0008",
+    "node_type": "CMTS",
+    "technology": "DOCSIS",
+    "name": "Синтетический узел 2/DOCSIS",
+    "lat": 56.93883175,
+    "lon": 60.59219009286171,
+    "buildings": [
+      {
+        "building_id": "B-00029",
+        "address": "Екатеринбург, Грунтовая улица, 6",
+        "lat": 56.93883175,
+        "lon": 60.59219009286171,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-02"
+      },
+      {
+        "building_id": "B-00030",
+        "address": "Екатеринбург, Серпуховский переулок, 72",
+        "lat": 56.90639675,
+        "lon": 60.63977501008014,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-02"
+      },
+      {
+        "building_id": "B-00031",
+        "address": "Екатеринбург, переулок Ершова, 108",
+        "lat": 56.90341135,
+        "lon": 60.582542000000004,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-02"
+      },
+      {
+        "building_id": "B-00032",
+        "address": "Екатеринбург, улица Избирателей, 142",
+        "lat": 56.90904845,
+        "lon": 60.57983561464286,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-02"
+      }
+    ]
+  },
+  {
+    "access_node_id": "AN-0009",
+    "node_type": "OLT",
+    "technology": "PON",
+    "name": "Синтетический узел 3/PON",
+    "lat": 56.8975408,
+    "lon": 60.58386469183088,
+    "buildings": [
+      {
+        "building_id": "B-00033",
+        "address": "Екатеринбург, Симбирский переулок, 2/4",
+        "lat": 56.8975408,
+        "lon": 60.58386469183088,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-03"
+      },
+      {
+        "building_id": "B-00034",
+        "address": "Екатеринбург, улица Победы, 40/2",
+        "lat": 56.90061145,
+        "lon": 60.598196200000004,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-03"
+      },
+      {
+        "building_id": "B-00035",
+        "address": "Екатеринбург, Ульяновская улица, 62",
+        "lat": 56.90382305,
+        "lon": 60.63873686007007,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-03"
+      },
+      {
+        "building_id": "B-00036",
+        "address": "Екатеринбург, Рябиновая улица, 11",
+        "lat": 56.9387315,
+        "lon": 60.61748011415526,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-03"
+      }
+    ]
+  },
+  {
+    "access_node_id": "AN-0010",
+    "node_type": "SWITCH",
+    "technology": "FTTB",
+    "name": "Синтетический узел 3/FTTB",
+    "lat": 56.8879886,
+    "lon": 60.60964823118751,
+    "buildings": [
+      {
+        "building_id": "B-00037",
+        "address": "Екатеринбург, улица Кузнецова, 2",
+        "lat": 56.8879886,
+        "lon": 60.60964823118751,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-03"
+      },
+      {
+        "building_id": "B-00038",
+        "address": "Екатеринбург, улица Новаторов, 17",
+        "lat": 56.90901745,
+        "lon": 60.59682972388255,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-03"
+      },
+      {
+        "building_id": "B-00039",
+        "address": "Екатеринбург, улица Стачек, 5",
+        "lat": 56.886554849999996,
+        "lon": 60.62952800000001,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-03"
+      },
+      {
+        "building_id": "B-00040",
+        "address": "Екатеринбург, улица Уральских Рабочих, 16",
+        "lat": 56.893943699999994,
+        "lon": 60.605306352362135,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-03"
+      }
+    ]
+  },
+  {
+    "access_node_id": "AN-0011",
+    "node_type": "DSLAM",
+    "technology": "XDSL",
+    "name": "Синтетический узел 3/XDSL",
+    "lat": 56.93666855,
+    "lon": 60.609024149999996,
+    "buildings": [
+      {
+        "building_id": "B-00041",
+        "address": "Екатеринбург, Полевая улица, 2В",
+        "lat": 56.93666855,
+        "lon": 60.609024149999996,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-03"
+      },
+      {
+        "building_id": "B-00042",
+        "address": "Екатеринбург, улица Ползунова, 84",
+        "lat": 56.907760350000004,
+        "lon": 60.637191849999994,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-03"
+      },
+      {
+        "building_id": "B-00043",
+        "address": "Екатеринбург, улица Войкова, 142",
+        "lat": 56.90353675,
+        "lon": 60.64122771920363,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-03"
+      },
+      {
+        "building_id": "B-00044",
+        "address": "Екатеринбург, проспект Космонавтов, 201А",
+        "lat": 56.934819399999995,
+        "lon": 60.6156219,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-03"
+      }
+    ]
+  },
+  {
+    "access_node_id": "AN-0012",
+    "node_type": "CMTS",
+    "technology": "DOCSIS",
+    "name": "Синтетический узел 3/DOCSIS",
+    "lat": 56.88371755,
+    "lon": 60.56074785,
+    "buildings": [
+      {
+        "building_id": "B-00045",
+        "address": "Екатеринбург, Верхний переулок, 57",
+        "lat": 56.88371755,
+        "lon": 60.56074785,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-03"
+      },
+      {
+        "building_id": "B-00046",
+        "address": "Екатеринбург, переулок Землячки, 5",
+        "lat": 56.91155875,
+        "lon": 60.594411745137194,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-03"
+      },
+      {
+        "building_id": "B-00047",
+        "address": "Екатеринбург, Ярославская улица, 52",
+        "lat": 56.91236325,
+        "lon": 60.603167072078655,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-03"
+      },
+      {
+        "building_id": "B-00048",
+        "address": "Екатеринбург, улица Войкова, 150",
+        "lat": 56.90410105,
+        "lon": 60.64278736007007,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-03"
+      }
+    ]
+  },
+  {
+    "access_node_id": "AN-0013",
+    "node_type": "OLT",
+    "technology": "PON",
+    "name": "Синтетический узел 4/PON",
+    "lat": 56.89034305,
+    "lon": 60.57406050000001,
+    "buildings": [
+      {
+        "building_id": "B-00049",
+        "address": "Екатеринбург, улица 22-го Партсъезда, 20Б",
+        "lat": 56.89034305,
+        "lon": 60.57406050000001,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-04"
+      },
+      {
+        "building_id": "B-00050",
+        "address": "Екатеринбург, улица Калинина, 51",
+        "lat": 56.89563345,
+        "lon": 60.591358958785946,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-04"
+      },
+      {
+        "building_id": "B-00051",
+        "address": "Екатеринбург, проспект Космонавтов, 114",
+        "lat": 56.9254808,
+        "lon": 60.613885999999994,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-04"
+      },
+      {
+        "building_id": "B-00052",
+        "address": "Екатеринбург, проспект Космонавтов, 207",
+        "lat": 56.9376623,
+        "lon": 60.61858478595553,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-04"
+      }
+    ]
+  },
+  {
+    "access_node_id": "AN-0014",
+    "node_type": "SWITCH",
+    "technology": "FTTB",
+    "name": "Синтетический узел 4/FTTB",
+    "lat": 56.89477355,
+    "lon": 60.62975087195706,
+    "buildings": [
+      {
+        "building_id": "B-00053",
+        "address": "Екатеринбург, улица Энтузиастов, 32А",
+        "lat": 56.89477355,
+        "lon": 60.62975087195706,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-04"
+      },
+      {
+        "building_id": "B-00054",
+        "address": "Екатеринбург, улица Красных Командиров, 25",
+        "lat": 56.897768150000005,
+        "lon": 60.62738831604986,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-04"
+      },
+      {
+        "building_id": "B-00055",
+        "address": "Екатеринбург, улица Ильича, 50",
+        "lat": 56.8980697,
+        "lon": 60.60925162152547,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-04"
+      },
+      {
+        "building_id": "B-00056",
+        "address": "Екатеринбург, улица Энтузиастов, 42",
+        "lat": 56.8962357,
+        "lon": 60.63516607692254,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-04"
+      }
+    ]
+  },
+  {
+    "access_node_id": "AN-0015",
+    "node_type": "DSLAM",
+    "technology": "XDSL",
+    "name": "Синтетический узел 4/XDSL",
+    "lat": 56.92807795,
+    "lon": 60.613431472055616,
+    "buildings": [
+      {
+        "building_id": "B-00057",
+        "address": "Екатеринбург, проспект Космонавтов, 123",
+        "lat": 56.92807795,
+        "lon": 60.613431472055616,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-04"
+      },
+      {
+        "building_id": "B-00058",
+        "address": "Екатеринбург, улица Народного Фронта, 80",
+        "lat": 56.91227705,
+        "lon": 60.591826,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-04"
+      },
+      {
+        "building_id": "B-00059",
+        "address": "Екатеринбург, Орловская улица, 33/35",
+        "lat": 56.88822925,
+        "lon": 60.56292080559146,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-04"
+      },
+      {
+        "building_id": "B-00060",
+        "address": "Екатеринбург, улица Фрезеровщиков, 126",
+        "lat": 56.90727065,
+        "lon": 60.639222789919856,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-04"
+      }
+    ]
+  },
+  {
+    "access_node_id": "AN-0016",
+    "node_type": "CMTS",
+    "technology": "DOCSIS",
+    "name": "Синтетический узел 4/DOCSIS",
+    "lat": 56.9353091,
+    "lon": 60.61305418440594,
+    "buildings": [
+      {
+        "building_id": "B-00061",
+        "address": "Екатеринбург, Полевая улица, 20",
+        "lat": 56.9353091,
+        "lon": 60.61305418440594,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-04"
+      },
+      {
+        "building_id": "B-00062",
+        "address": "Екатеринбург, улица Красных Командиров, 53",
+        "lat": 56.8988878,
+        "lon": 60.63285778952034,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-04"
+      },
+      {
+        "building_id": "B-00063",
+        "address": "Екатеринбург, улица Молодёжи, 29",
+        "lat": 56.90587805,
+        "lon": 60.57701733369005,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-04"
+      },
+      {
+        "building_id": "B-00064",
+        "address": "Екатеринбург, улица Народного Фронта, 3А",
+        "lat": 56.90071595,
+        "lon": 60.57619614916153,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-04"
+      }
+    ]
+  },
+  {
+    "access_node_id": "AN-0017",
+    "node_type": "OLT",
+    "technology": "PON",
+    "name": "Синтетический узел 5/PON",
+    "lat": 56.904459900000006,
+    "lon": 60.6447855160027,
+    "buildings": [
+      {
+        "building_id": "B-00065",
+        "address": "Екатеринбург, улица Кобозева, 118",
+        "lat": 56.904459900000006,
+        "lon": 60.6447855160027,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-05"
+      },
+      {
+        "building_id": "B-00066",
+        "address": "Екатеринбург, улица 40-летия Октября, 17",
+        "lat": 56.891476350000005,
+        "lon": 60.581757499999995,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-05"
+      },
+      {
+        "building_id": "B-00067",
+        "address": "Екатеринбург, Краснополянский переулок, 8",
+        "lat": 56.902753849999996,
+        "lon": 60.5757385,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-05"
+      },
+      {
+        "building_id": "B-00068",
+        "address": "Екатеринбург, проспект Космонавтов, 171",
+        "lat": 56.9322441,
+        "lon": 60.61484755,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-05"
+      }
+    ]
+  },
+  {
+    "access_node_id": "AN-0018",
+    "node_type": "SWITCH",
+    "technology": "FTTB",
+    "name": "Синтетический узел 5/FTTB",
+    "lat": 56.8956978,
+    "lon": 60.619094,
+    "buildings": [
+      {
+        "building_id": "B-00069",
+        "address": "Екатеринбург, улица Стачек, 57",
+        "lat": 56.8956978,
+        "lon": 60.619094,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-05"
+      },
+      {
+        "building_id": "B-00070",
+        "address": "Екатеринбург, Кировградская улица, 61А",
+        "lat": 56.8985445,
+        "lon": 60.57112532935754,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-05"
+      },
+      {
+        "building_id": "B-00071",
+        "address": "Екатеринбург, Шефская улица, 103",
+        "lat": 56.9100923,
+        "lon": 60.61893017165686,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-05"
+      },
+      {
+        "building_id": "B-00072",
+        "address": "Екатеринбург, Таганская улица, 3",
+        "lat": 56.8963785,
+        "lon": 60.641454791379715,
+        "building_type": "MKD",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-05"
+      }
+    ]
+  },
+  {
+    "access_node_id": "AN-0019",
+    "node_type": "DSLAM",
+    "technology": "XDSL",
+    "name": "Синтетический узел 5/XDSL",
+    "lat": 56.9020271,
+    "lon": 60.56963034664107,
+    "buildings": [
+      {
+        "building_id": "B-00073",
+        "address": "Екатеринбург, Республиканская улица, 2Б",
+        "lat": 56.9020271,
+        "lon": 60.56963034664107,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-05"
+      },
+      {
+        "building_id": "B-00074",
+        "address": "Екатеринбург, Книжный переулок, 5",
+        "lat": 56.913726499999996,
+        "lon": 60.598917238714506,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-05"
+      },
+      {
+        "building_id": "B-00075",
+        "address": "Екатеринбург, улица Калинина, 111",
+        "lat": 56.900572249999996,
+        "lon": 60.57856089999999,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-05"
+      },
+      {
+        "building_id": "B-00076",
+        "address": "Екатеринбург, улица Калинина, 151",
+        "lat": 56.90289405,
+        "lon": 60.57177595,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-05"
+      }
+    ]
+  },
+  {
+    "access_node_id": "AN-0020",
+    "node_type": "CMTS",
+    "technology": "DOCSIS",
+    "name": "Синтетический узел 5/DOCSIS",
+    "lat": 56.90348405,
+    "lon": 60.57342419125376,
+    "buildings": [
+      {
+        "building_id": "B-00077",
+        "address": "Екатеринбург, улица Молодёжи, 3",
+        "lat": 56.90348405,
+        "lon": 60.57342419125376,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-05"
+      },
+      {
+        "building_id": "B-00078",
+        "address": "Екатеринбург, Кировградская улица, 136",
+        "lat": 56.900655799999996,
+        "lon": 60.57163576032255,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-05"
+      },
+      {
+        "building_id": "B-00079",
+        "address": "Екатеринбург, Связной переулок, 10",
+        "lat": 56.907527,
+        "lon": 60.6070639,
+        "building_type": "PRIVATE",
+        "overhead_line": true,
+        "zone_service_center_id": "SC-05"
+      },
+      {
+        "building_id": "B-00080",
+        "address": "Екатеринбург, улица Бакинских Комиссаров, 164",
+        "lat": 56.913193449999994,
+        "lon": 60.605128300000004,
+        "building_type": "PRIVATE",
+        "overhead_line": false,
+        "zone_service_center_id": "SC-05"
+      }
+    ]
+  }
+]

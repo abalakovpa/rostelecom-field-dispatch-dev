@@ -21,7 +21,7 @@ function validateReference(r: any) {
   }
   const buildings = r.access_nodes.flatMap((n: any) => n.buildings);
   unique(buildings, 'building_id');
-  for (const building of buildings) if (!centers.has(building.zone_service_center_id)) fail('UNKNOWN_SERVICE_CENTER', building.zone_service_center_id);
+  for (const building of buildings) if (building.zone_service_center_id !== undefined && !centers.has(building.zone_service_center_id)) fail('UNKNOWN_SERVICE_CENTER', building.zone_service_center_id);
 }
 function validateMatrix(m: any, reference?: any) {
   const size = m.points.length;
@@ -103,6 +103,19 @@ export function registerOfficialApi(app: FastifyInstance, store: Store, planner:
     const plan=await planner({reference:state.reference,matrix:state.matrix,day:structuredClone(day.input),previous_plan:structuredClone(day.plan),event},timeout);
     plan.date=day.input.date; plan.as_of=day.input.now; plan.plan_version=event ? day.plan.plan_version+1 : 1;
     plan.based_on_event_id=event?.event_id ?? null; plan.computation_ms=Math.round(performance.now()-started);
+    for (const route of plan.routes ?? []) {
+      const worker=state.reference.staff.find((w:any)=>w.staff_id===route.staff_id);
+      const stock={...worker?.equipment_start};
+      for (let i=0;i<route.stops.length;i++) {
+        const stop=route.stops[i],prior=route.stops[i-1];
+        const from=prior ? state.matrix.points.indexOf(prior.location_id) : -1,to=state.matrix.points.indexOf(stop.location_id);
+        stop.travel_sec=from<0?0:state.matrix.durations_sec[from][to];
+        stop.distance_m=from<0?0:state.matrix.distances_m[from][to];
+        if(stop.type==='RESTOCK') Object.assign(stock,worker.equipment_capacity);
+        if(stop.type==='VISIT') {const order=day.input.orders.find((o:any)=>o.order_id===stop.order_id);for(const [kind,count] of Object.entries(order?.required_equipment ?? {}))stock[kind]=(stock[kind] ?? 0)-Number(count);}
+        stop.equipment_after={...stock};
+      }
+    }
     const validate=validator.getSchema('urn:dispatch:Plan');
     if (!validate?.(plan)) fail('INVALID_PLANNER_RESPONSE','Planner result does not match Plan schema',502);
     const visits=plan.routes.flatMap((r:any)=>r.stops.filter((s:any)=>s.type==='VISIT').map((s:any)=>s.order_id));
@@ -146,6 +159,8 @@ export function registerOfficialApi(app: FastifyInstance, store: Store, planner:
     return result;
   }));
 }
+
+
 
 
 

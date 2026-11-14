@@ -59,7 +59,7 @@
         ]
       }
     ],
-    "unassigned": [{"order_id": "I-03", "reason_code": "NO_QUALIFIED_WORKER", "details": "height_permit"}],
+    "unassigned": [{"order_id": "I-03", "reason_code": "NO_QUALIFIED_WORKER"}],
     "risks": []
   }
 }

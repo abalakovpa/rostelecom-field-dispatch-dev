@@ -1,0 +1,9 @@
+{
+  "method": "stochastic occupied-cell sample, independent of depots",
+  "cell_size_m": 600,
+  "min_same_type_spacing_m": 100,
+  "homes": 80,
+  "streets": 51,
+  "nearest_depot_median_m": 755,
+  "homes_within_500m_of_any_depot": 18
+}

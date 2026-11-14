@@ -10,7 +10,7 @@ export const httpPlanner: Planner = async (input, timeoutMs) => {
   try {
     const response = await fetch(url, {
       method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(input), signal: AbortSignal.timeout(timeoutMs),
+      body: JSON.stringify({...input,time_limit_sec:Math.max(0.1, timeoutMs/1000-1)}), signal: AbortSignal.timeout(timeoutMs),
     });
     if (!response.ok) throw new Error(`Planner returned ${response.status}`);
     return await response.json();
@@ -18,3 +18,4 @@ export const httpPlanner: Planner = async (input, timeoutMs) => {
     throw new ApiError(503, 'PLANNER_UNAVAILABLE', 'Planner failed or timed out');
   }
 };
+

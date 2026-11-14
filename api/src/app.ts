@@ -1,4 +1,5 @@
-﻿import Fastify, { type FastifyError, type FastifyInstance } from 'fastify';
+﻿import { registerUi } from './ui.js';
+import Fastify, { type FastifyError, type FastifyInstance } from 'fastify';
 import { registerOfficialApi } from './official-api.js';
 import { PostgresStore, type Store } from './store.js';
 import { httpPlanner, type Planner } from './planning.js';
@@ -21,6 +22,8 @@ export function buildApp(store: Store = new PostgresStore(), planner: Planner = 
   app.setNotFoundHandler((_request,reply)=>reply.code(404).send({error:{code:'NOT_FOUND',message:'Route not found'}}));
   app.register(healthRoutes);
   registerOfficialApi(app,store,planner);
+  registerUi(app,store);
   return app;
 }
+
 
