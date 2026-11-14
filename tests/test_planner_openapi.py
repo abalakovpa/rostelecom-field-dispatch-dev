@@ -117,3 +117,36 @@ class OpenApiPlannerTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class TemporaryOutageTest(unittest.TestCase):
+    def test_resume_replenishes_at_home_and_preserves_input(self):
+        reference,matrix,day=sample()
+        previous=plan_openapi(reference,matrix,day)
+        original=deepcopy(previous)
+        event={'event_id':'OUT-1','type':'STAFF_UNAVAILABLE','timestamp':at('08:45:00'),'staff_id':'ST-001','until':at('10:00:00'),'reason':'VEHICLE_BREAKDOWN'}
+        result=plan_openapi(reference,matrix,day,previous=previous,event=event)
+        self.assertEqual(previous,original)
+        route=result['routes'][0]
+        reloads=[s for s in route['stops'] if s['type']=='RESTOCK' and s['location_id']=='SC-01']
+        self.assertTrue(reloads)
+        self.assertGreaterEqual(datetime.fromisoformat(reloads[0]['start']),datetime.fromisoformat(event['until']))
+        visits=[s for s in route['stops'] if s['type']=='VISIT']
+        self.assertTrue(visits)
+        self.assertTrue(all(datetime.fromisoformat(s['start'])>=datetime.fromisoformat(event['until']) for s in visits))
+
+class InterruptedVisitTest(unittest.TestCase):
+    def test_unfinished_visit_is_reassigned_and_history_not_double_charged(self):
+        reference,matrix,day=sample()
+        original=plan_openapi(reference,matrix,day)
+        visit=next(s for s in original['routes'][0]['stops'] if s['type']=='VISIT')
+        replacement=deepcopy(reference['staff'][0]);replacement['staff_id']='ST-002';reference['staff'].append(replacement)
+        interrupted=deepcopy(day)
+        interrupted['_interrupted_visits']=[{'staff_id':'ST-001','order_id':visit['order_id'],'start':visit['start'],'interrupted_at':at('09:15:00'),'equipment_consumed':STOCK}]
+        order=next(o for o in interrupted['orders'] if o['order_id']==visit['order_id'])
+        order['_remaining_duration_sec']=300;order['_remaining_equipment']={'ONT':0,'ROUTER':0,'STB':0};order['latest_start']=at('10:30:00')
+        event={'event_id':'OUT','type':'STAFF_UNAVAILABLE','timestamp':at('09:15:00'),'staff_id':'ST-001','reason':'ILLNESS','until':None}
+        result=plan_openapi(reference,matrix,interrupted,previous=original,event=event)
+        visits=[(r['staff_id'],s) for r in result['routes'] for s in r['stops'] if s.get('order_id')==visit['order_id']]
+        self.assertEqual(len(visits),1)
+        self.assertEqual(visits[0][0],'ST-002')
+        self.assertEqual((datetime.fromisoformat(visits[0][1]['end'])-datetime.fromisoformat(visits[0][1]['start'])).total_seconds(),300)

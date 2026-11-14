@@ -1,4 +1,4 @@
-"""Day planning using the organizers' OpenAPI payloads."""
+﻿"""Day planning using the organizers' OpenAPI payloads."""
 
 from dataclasses import dataclass
 from datetime import datetime, time, timedelta, timezone
@@ -70,13 +70,14 @@ class DayPlanner:
                 max(_seconds(order["slot"]["start"]), _seconds(order["registered_at"]),
                     self.now if order_id == new_order_id else 0),
                 _seconds(order["latest_start"]), _seconds(order["deadline"]),
-                60 * self.types[order["work_type_code"]]["duration_min"],
+                order.get("_remaining_duration_sec", 60 * self.types[order["work_type_code"]]["duration_min"]),
             ) for order_id, order in self.orders.items()
         }
         self.points = {point: index for index, point in enumerate(matrix["points"])}
         self.durations = matrix["durations_sec"]
         self.previous = {route["staff_id"]: route for route in (previous or {}).get("routes", [])}
         self.event = event or {}
+        self.interrupted = day.get("_interrupted_visits", [])
 
     def travel(self, origin, destination):
         return self.durations[self.points[origin]][self.points[destination]]
@@ -96,6 +97,12 @@ class WorkerRoute:
         self.break_duration = shift["break_duration_min"] * 60
         self.capacity = _equipment(staff["equipment_capacity"])
         self.stock = _equipment(staff["equipment_start"])
+        # Equipment already installed remains at the interrupted site.
+        # Carry its expenditure with the original worker, never charge a replacement twice.
+        for record in day.interrupted:
+            if record["staff_id"] == self.id:
+                demand = _equipment(record["equipment_consumed"])
+                self.stock = tuple(a-b for a,b in zip(self.stock,demand))
         self.frozen = []
         self.old_legs = {}
         self.old_orders = []
@@ -116,6 +123,8 @@ class WorkerRoute:
                 leg = (prior.key, stop.key)
                 self.old_legs.setdefault(leg, []).append(stop.arrival)
             prior = stop
+            if any(record["staff_id"] == self.id and record["order_id"] == stop.order and record["start"] == item["start"] for record in day.interrupted):
+                continue
             if stop.start >= day.now:
                 if stop.order is not None:
                     self.old_orders.append(stop.order)
@@ -128,7 +137,7 @@ class WorkerRoute:
             if stop.kind == "RESTOCK":
                 self.stock = self.capacity
             elif stop.order is not None:
-                demand = _equipment(day.orders[stop.order]["required_equipment"])
+                demand = _equipment(day.orders[stop.order].get("_remaining_equipment", day.orders[stop.order]["required_equipment"]))
                 self.stock = tuple(available - needed for available, needed in zip(self.stock, demand))
 
     def qualified(self, order):
@@ -160,7 +169,7 @@ class WorkerRoute:
         order = day.orders[order_id]
         earliest, latest, _, duration = day.timing[order_id]
         location = order["building_id"]
-        demand = _equipment(order["required_equipment"])
+        demand = _equipment(order.get("_remaining_equipment", order["required_equipment"]))
         if all(available >= needed for available, needed in zip(stock, demand)):
             options = [((), previous, stock)]
         else:
@@ -207,6 +216,17 @@ class WorkerRoute:
             steps.append(Stop("DEPOT_START", self.home, start, start, start))
 
         stock = self.stock
+        # A temporary outage ends at the home center with a replenished kit.
+        # Model the replenishment explicitly so inventory replay stays auditable.
+        if self.resume is not None and self.unavailable_from and self.resume < self.shift_end:
+            resumed = any(stop.kind == "RESTOCK" and stop.location == self.home and stop.start >= self.resume for stop in steps)
+            if not resumed:
+                opens, closes, duration = self.day.centers[self.home]
+                start = max(self.resume, opens, steps[-1].end + self.day.travel(steps[-1].location, self.home), self.day.now)
+                if start + duration > min(closes, self.shift_end):
+                    return [], "NO_SHIFT_TIME"
+                steps.append(Stop("RESTOCK", self.home, start, start, start + duration))
+                stock = self.capacity
         lunch = any(stop.kind == "BREAK" for stop in steps)
         for index, order_id in enumerate(sequence):
             if not lunch and break_position == index:
@@ -382,3 +402,5 @@ def plan_openapi(reference, matrix, day, *, previous=None, event=None, cancelled
         "unassigned": unassigned, "pgp_groups": list(pgp_groups), "cancelled": list(cancelled),
         "alerts": _late_alerts(model, workers, assignments, previous),
     }
+
+

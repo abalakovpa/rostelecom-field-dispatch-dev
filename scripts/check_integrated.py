@@ -32,3 +32,9 @@ assert call('GET',path+'/plan')==before
 with urlopen(args.url+'/') as r:assert b'<html' in r.read().lower()
 with urlopen(args.url+'/static/app.js') as r:assert r.status==200
 print('INTEGRATION SMOKE PASSED')
+# Explicitly exercise interruption and preserve the record outside completed visits.
+outage={'event_id':'OUTAGE-SMOKE','type':'STAFF_UNAVAILABLE','timestamp':'2026-10-26T09:40:00+05:00','staff_id':'ST-001','until':'2026-10-26T10:30:00+05:00','reason':'ILLNESS'}
+response=call('POST',path+'/events',outage);assert response['plan_version']==3
+outage_plan=call('GET',path+'/plan');assert outage_plan['interrupted_visits']
+assert outage_plan['interrupted_visits'][0]['staff_id']=='ST-001'
+print('INTERRUPTION SMOKE PASSED')

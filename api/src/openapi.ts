@@ -16,3 +16,5 @@ export const definitions: Record<string, any> = Object.fromEntries(
   Object.entries(spec.components.schemas).map(([name, schema]) => [name, { ...convert(schema), $id: `urn:dispatch:${name}` }]),
 );
 export const schemaRef = (name: string) => ({ $ref: `urn:dispatch:${name}` });
+
+definitions.Plan!.additionalProperties = true;

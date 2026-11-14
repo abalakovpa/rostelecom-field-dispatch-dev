@@ -1,4 +1,4 @@
-﻿import { Ajv } from 'ajv';
+import { Ajv } from 'ajv';
 import addFormats from 'ajv-formats';
 import type { FastifyInstance } from 'fastify';
 import { ApiError } from './errors.js';
@@ -63,6 +63,17 @@ function applyEvent(day: any, e: any, reference: any) {
     validateOrder(e.order, reference, day.input.date, e.timestamp);
     day.input.orders.push(e.order);
   }
+  if (e.type === 'STAFF_UNAVAILABLE') {
+    const route=day.plan.routes.find((r:any)=>r.staff_id===e.staff_id);
+    for (const visit of route?.stops ?? []) {
+      if(visit.type!=='VISIT' || Date.parse(visit.start)>Date.parse(e.timestamp) || Date.parse(visit.end)<=Date.parse(e.timestamp))continue;
+      const interrupted=day.input.orders.find((o:any)=>o.order_id===visit.order_id);
+      const consumed={...(interrupted._remaining_equipment ?? interrupted.required_equipment)};
+      (day.input._interrupted_visits ??= []).push({staff_id:e.staff_id,order_id:visit.order_id,start:visit.start,interrupted_at:e.timestamp,planned_end:visit.end,equipment_consumed:consumed});
+      interrupted._remaining_duration_sec=Math.max(1,Math.round((Date.parse(visit.end)-Date.parse(e.timestamp))/1000));
+      interrupted._remaining_equipment={ONT:0,ROUTER:0,STB:0};
+    }
+  }
   if (e.type === 'STAFF_UNAVAILABLE' && e.until && Date.parse(e.until) <= Date.parse(e.timestamp)) fail('INVALID_UNAVAILABLE_INTERVAL', 'until must be after timestamp');
   day.input.now = e.timestamp;
   day.events.push(e);
@@ -106,13 +117,14 @@ export function registerOfficialApi(app: FastifyInstance, store: Store, planner:
     for (const route of plan.routes ?? []) {
       const worker=state.reference.staff.find((w:any)=>w.staff_id===route.staff_id);
       const stock={...worker?.equipment_start};
+      for(const record of day.input._interrupted_visits ?? [])if(record.staff_id===route.staff_id)for(const [kind,count] of Object.entries(record.equipment_consumed))stock[kind]=(stock[kind] ?? 0)-Number(count);
       for (let i=0;i<route.stops.length;i++) {
         const stop=route.stops[i],prior=route.stops[i-1];
         const from=prior ? state.matrix.points.indexOf(prior.location_id) : -1,to=state.matrix.points.indexOf(stop.location_id);
         stop.travel_sec=from<0?0:state.matrix.durations_sec[from][to];
         stop.distance_m=from<0?0:state.matrix.distances_m[from][to];
         if(stop.type==='RESTOCK') Object.assign(stock,worker.equipment_capacity);
-        if(stop.type==='VISIT') {const order=day.input.orders.find((o:any)=>o.order_id===stop.order_id);for(const [kind,count] of Object.entries(order?.required_equipment ?? {}))stock[kind]=(stock[kind] ?? 0)-Number(count);}
+        if(stop.type==='VISIT') {const order=day.input.orders.find((o:any)=>o.order_id===stop.order_id);for(const [kind,count] of Object.entries(order?._remaining_equipment ?? order?.required_equipment ?? {}))stock[kind]=(stock[kind] ?? 0)-Number(count);}
         stop.equipment_after={...stock};
       }
     }
@@ -126,6 +138,7 @@ export function registerOfficialApi(app: FastifyInstance, store: Store, planner:
       for (const oldRoute of day.plan.routes) {
         const next=plan.routes.find((r:any)=>r.staff_id===oldRoute.staff_id);
         for (const old of oldRoute.stops.filter((s:any)=>Date.parse(s.start)<Date.parse(event.timestamp))) {
+          if(event.type==='STAFF_UNAVAILABLE' && oldRoute.staff_id===event.staff_id && old.type==='VISIT' && Date.parse(old.end)>Date.parse(event.timestamp))continue;
           const retained=next?.stops.find((s:any)=>s.type===old.type && s.order_id===old.order_id && s.start===old.start);
           const changedEnd=old.type==='VISIT' && old.order_id===event.order_id && oldRoute.staff_id===event.staff_id && ['VISIT_DELAYED','ORDER_TRANSFERRED'].includes(event.type);
           if (!retained || retained.location_id!==old.location_id || retained.arrival!==old.arrival || (!changedEnd && retained.end!==old.end)) fail('INVALID_PLANNER_RESPONSE','Started stop was changed',502);
@@ -133,6 +146,7 @@ export function registerOfficialApi(app: FastifyInstance, store: Store, planner:
         }
       }
     }
+    plan.interrupted_visits=day.input._interrupted_visits ?? [];
     day.plan=plan; return plan;
   }
   app.post<{Params:{date:string};Body:{time_limit_sec?:number}}>('/api/v1/days/:date/plan', {schema:{params,body:schemaRef('PlanRequest'),response:response('Plan')}}, async request => store.transact(async state => {
