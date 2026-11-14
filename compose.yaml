@@ -10,9 +10,9 @@ services:
       POSTGRES_PORT: 5432
       POSTGRES_DB: ${POSTGRES_DB:-dispatcher_next}
       POSTGRES_USER: ${POSTGRES_USER:-dispatcher}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Create .env from .env.example and set password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-evaluation-only}
     ports:
-      - "127.0.0.1:${APP_PORT:-8083}:8080"
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
     depends_on:
       db:
         condition: service_healthy
@@ -21,7 +21,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-dispatcher_next}
       POSTGRES_USER: ${POSTGRES_USER:-dispatcher}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Create .env from .env.example and set password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-evaluation-only}
       TZ: Asia/Yekaterinburg
       PGTZ: Asia/Yekaterinburg
     ports:
