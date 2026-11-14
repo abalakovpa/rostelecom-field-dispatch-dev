@@ -119,7 +119,7 @@ export function registerOfficialApi(app: FastifyInstance, store: Store, planner:
       const validateOrderSchema=validator.getSchema('urn:dispatch:Order');
       if(!validateOrderSchema?.(candidate))fail('INVALID_PLANNER_RESPONSE','Invalid rescheduled order',502);
       validateOrder(candidate,state.reference,day.input.date,day.input.now);
-      if(Date.parse(candidate.slot.start)<Date.parse(day.input.now) || Date.parse(candidate.latest_start)>Date.parse(order.deadline))fail('INVALID_PLANNER_RESPONSE','Reschedule is outside allowed time',502);
+      if(Date.parse(candidate.slot.start)<Date.parse(day.input.now))fail('INVALID_PLANNER_RESPONSE','Reschedule is outside allowed time',502);
       order.slot=update.slot;order.latest_start=update.latest_start;
     }
     for(const transfer of plan._future_transfers ?? []) {
@@ -144,6 +144,7 @@ export function registerOfficialApi(app: FastifyInstance, store: Store, planner:
           if(stop.type==='RESTOCK')stock={...state.reference.staff.find((w:any)=>w.staff_id===route.staff_id).equipment_capacity};
           if(stop.type==='VISIT'){const o=input.orders.find((o:any)=>o.order_id===stop.order_id);for(const [kind,count] of Object.entries(o._remaining_equipment ?? o.required_equipment))stock[kind]=(stock[kind] ?? 0)-Number(count);}
           stop.equipment_after={...stock};
+        if(stop.type==='VISIT'){const order=(input?.orders ?? day.input.orders).find((o:any)=>o.order_id===stop.order_id);if(order)stop.deadline_missed=Date.parse(stop.end)>Date.parse(order.deadline);}
         }
       }
       result.based_on_event_id=event?.event_id ?? null;
@@ -166,6 +167,7 @@ export function registerOfficialApi(app: FastifyInstance, store: Store, planner:
         if(stop.type==='RESTOCK') Object.assign(stock,worker.equipment_capacity);
         if(stop.type==='VISIT') {const order=day.input.orders.find((o:any)=>o.order_id===stop.order_id);for(const [kind,count] of Object.entries(order?._remaining_equipment ?? order?.required_equipment ?? {}))stock[kind]=(stock[kind] ?? 0)-Number(count);}
         stop.equipment_after={...stock};
+        if(stop.type==='VISIT'){const order=day.input.orders.find((o:any)=>o.order_id===stop.order_id);if(order)stop.deadline_missed=Date.parse(stop.end)>Date.parse(order.deadline);}
       }
     }
     const validate=validator.getSchema('urn:dispatch:Plan');

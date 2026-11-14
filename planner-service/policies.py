@@ -37,25 +37,25 @@ def calculate(request):
     cancelled=deepcopy((previous or {}).get('cancelled',[]))
     if event and event['type']=='ORDER_CANCELLED':
         begun=any(s.get('order_id')==event['order_id'] and stamp(s['start'])<stamp(event['timestamp']) for r in previous['routes'] for s in r['stops'])
-        if not begun and not any(c['order_id']==event['order_id'] for c in cancelled):cancelled.append({'order_id':event['order_id'],'cancelled_at':event['timestamp'],'event_id':event['event_id']})
+        if not begun and not any(c['order_id']==event['order_id'] for c in cancelled):cancelled.append({'order_id':event['order_id'],'cancelled_at':event['timestamp'],'event_id':(event or {}).get('event_id','INITIAL')})
     def solve(candidate,remaining):
         return plan_openapi(reference,matrix,candidate,previous=previous,event=event,cancelled=cancelled,pgp_groups=(),time_limit_sec=max(.01,remaining))
-    result=solve(day,budget*.5 if event else budget)
+    result=solve(day,budget*.4)
     changes=[]
     future_transfers=[]
     calendar=deepcopy(request.get('calendar',{}))
     same_day_deadline=monotonic()+max(0,deadline-monotonic())*.6
     # On events only: try later 2-hour slots on this day, preserving deadline.
-    for missing in list(result['unassigned']) if event else []:
+    for missing in list(result['unassigned']):
         if monotonic()>=deadline:break
         order=next(o for o in day['orders'] if o['order_id']==missing['order_id'])
         duration=order.get('_remaining_duration_sec',next(w['duration_min']*60 for w in reference['work_types'] if w['code']==order['work_type_code']))
         grace=next(w.get('max_start_delay_min') for w in reference['work_types'] if w['code']==order['work_type_code'])
         start=max(stamp(day['now']),stamp(order['slot']['start'])+timedelta(minutes=30))
-        while start.date().isoformat()==day['date'] and start+timedelta(seconds=duration)<=stamp(order['deadline']) and monotonic()<same_day_deadline:
+        while start.date().isoformat()==day['date'] and monotonic()<same_day_deadline:
             candidate=deepcopy(day);updated=next(o for o in candidate['orders'] if o['order_id']==order['order_id'])
             slot={'start':start.isoformat(),'end':(start+timedelta(hours=2)).isoformat()}
-            latest=min(start+timedelta(minutes=grace if grace is not None else 120),stamp(order['deadline'])-timedelta(seconds=duration))
+            latest=start+timedelta(minutes=grace if grace is not None else 120)
             updated.update(slot=slot,latest_start=latest.isoformat())
             trial=solve(candidate,min(.25,deadline-monotonic()))
             formerly_assigned={s['order_id'] for r in result['routes'] for s in r['stops'] if s['type']=='VISIT'}
@@ -65,14 +65,14 @@ def calculate(request):
                 day=candidate;result=trial;break
             start+=timedelta(minutes=30)
     # Reserve a real route in a later day's calendar, not merely a suggested date.
-    for missing in list(result['unassigned']) if event else []:
+    for missing in list(result['unassigned']):
         if monotonic()>=deadline:break
         order=next(o for o in day['orders'] if o['order_id']==missing['order_id'])
         duration=order.get('_remaining_duration_sec',next(w['duration_min']*60 for w in reference['work_types'] if w['code']==order['work_type_code']))
         grace=next(w.get('max_start_delay_min') for w in reference['work_types'] if w['code']==order['work_type_code'])
         local=timezone(timedelta(hours=5))
         target_date=datetime.fromisoformat(day['date']).date()+timedelta(days=1)
-        last_date=stamp(order['deadline']).astimezone(local).date()
+        last_date=target_date+timedelta(days=365)
         accepted=False
         while target_date<=last_date and monotonic()<deadline:
             key=target_date.isoformat()
@@ -86,10 +86,10 @@ def calculate(request):
             if any(o['order_id']==order['order_id'] for o in target['orders']):break
             earliest=min((p['shift']['start'] for p in reference['staff'] if p['staff_id'] not in target.get('absent_staff_ids',[])),default='23:59')
             start=max(stamp(key+'T'+earliest+':00+05:00'),stamp(target['now']))
-            while start.date()==target_date and start+timedelta(seconds=duration)<=stamp(order['deadline']) and monotonic()<deadline:
+            while start.date()==target_date and monotonic()<deadline:
                 candidate=deepcopy(target);moved=deepcopy(order)
                 slot={'start':start.isoformat(),'end':(start+timedelta(hours=2)).isoformat()}
-                latest=min(start+timedelta(minutes=grace if grace is not None else 120),stamp(order['deadline'])-timedelta(seconds=duration))
+                latest=start+timedelta(minutes=grace if grace is not None else 120)
                 moved.update(slot=slot,latest_start=latest.isoformat());candidate['orders'].append(moved)
                 trial=plan_openapi(reference,matrix,candidate,previous=old_plan,time_limit_sec=min(.3,max(.01,deadline-monotonic())),cancelled=(old_plan or {}).get('cancelled',[]))
                 assigned={s['order_id'] for r in trial['routes'] for s in r['stops'] if s['type']=='VISIT'}
@@ -108,7 +108,7 @@ def calculate(request):
     result['transferred_orders']=deepcopy((previous or {}).get('transferred_orders',[]))+[{k:v for k,v in transfer.items() if k not in ('target_input','target_plan')} for transfer in future_transfers]
     result['incident_groups']=groups_for(reference,day,previous,cancelled)
     result['_order_updates']=changes
-    result['automatic_reschedules']=deepcopy((previous or {}).get('automatic_reschedules',[]))+[{**c,'changed_at':day['now'],'event_id':event['event_id']} for c in changes]
+    result['automatic_reschedules']=deepcopy((previous or {}).get('automatic_reschedules',[]))+[{**c,'changed_at':day['now'],'event_id':(event or {}).get('event_id','INITIAL')} for c in changes]
     for change in changes:
-        result['alerts'].append({'alert_id':f"AUTO-{event['event_id']}-{change['order_id']}",'created_at':day['now'],'type':'LATE_RISK','status':'RESOLVED','order_id':change['order_id'],'suggested_action':'RESCHEDULE','proposed_slot':change['slot'],'applied':True,'resolved_at':day['now'],'message':'Система автоматически назначила новое время визита'})
+        result['alerts'].append({'alert_id':f"AUTO-{(event or {}).get('event_id','INITIAL')}-{change['order_id']}",'created_at':day['now'],'type':'LATE_RISK','status':'RESOLVED','order_id':change['order_id'],'suggested_action':'RESCHEDULE','proposed_slot':change['slot'],'applied':True,'resolved_at':day['now'],'message':'Система автоматически назначила новое время визита'})
     return result

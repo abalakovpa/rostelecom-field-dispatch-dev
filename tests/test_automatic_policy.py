@@ -64,9 +64,10 @@ class FutureCalendarTest(unittest.TestCase):
         self.assertTrue(booked<=actual)
         self.assertTrue(any(row[1]==transfer['order_id'] for row in actual))
         self.assertFalse(any(u['order_id']==transfer['order_id'] for u in result['unassigned']))
-    def test_deadline_does_not_allow_silent_next_day_extension(self):
+    def test_overdue_order_still_receives_next_day_appointment(self):
         request=self.request()
         for o in request['day']['orders']:o['deadline']=at('18:00:00')
         result=calculate(request)
-        self.assertEqual(result['_future_transfers'],[])
-        self.assertTrue(result['unassigned'])
+        self.assertTrue(result['_future_transfers'])
+        self.assertEqual(result['_future_transfers'][0]['to_date'],'2026-10-27')
+
