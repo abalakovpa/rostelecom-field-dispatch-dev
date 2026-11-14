@@ -118,7 +118,7 @@ function selectOrder(order){
   if(assignment)box.append(detailRow('Исполнитель',assignment.staff),detailRow('Назначенный визит',`${fullTime(assignment.stop.start)}–${time(assignment.stop.end)}`));
   const reason=state.view.unassigned.get(order.order_id);
   if(reason)box.append(node('div','unassigned-detail',`${reason.reason_text} ${actionLabels[reason.suggested_action]||''}`));
-  const group=state.view.groups.get(order.order_id);if(group)box.append(node('div','unassigned-detail',`ПГП · ${group.group_id} · узел ${group.access_node_id} · ${group.order_ids.length} нарядов. ${actionLabels[group.action]||group.action}`));
+  const group=state.view.groups.get(order.order_id)||state.view.incidents?.get(order.order_id);if(group)box.append(node('div','unassigned-detail',`ПГП · ${group.group_id} · узел ${group.access_node_id} · ${group.order_ids.length} нарядов. ${actionLabels[group.action]||group.action}`));
   const cancelled=state.view.cancelled.get(order.order_id);if(cancelled)box.append(detailRow('Отменён в',fullTime(cancelled.cancelled_at)),node('p','status-tag status-cancelled','Отменённый наряд не требует выезда'));
   for(const alert of state.view.riskAlerts.get(order.order_id)||[]){
     const facts=node('div','unassigned-detail risk-detail');facts.append(node('strong','','Риск опоздания'),node('p','',alert.message));

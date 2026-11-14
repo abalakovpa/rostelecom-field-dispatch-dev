@@ -39,3 +39,13 @@ test('map filters exclude stale plan records and terminal orders from active ris
  assert.equal(marker.kind,'risk');assert.match(marker.text,/ПГП: 1/);
  assert.equal(markerSummary([{order_id:'C'}],view).kind,'cancelled');
 });
+
+
+test('incident membership highlights assigned visits without subtracting assignments',()=>{
+ const order={order_id:'O1'};
+ const day={date:'2026-11-14',model_now:'2026-11-14T08:00:00+05:00',orders:[order],plan:{routes:[{staff_id:'S1',stops:[{type:'VISIT',order_id:'O1',arrival:'2026-11-14T09:00:00+05:00',start:'2026-11-14T09:00:00+05:00',end:'2026-11-14T10:00:00+05:00'}]}],unassigned:[],cancelled:[],pgp_groups:[],incident_groups:[{group_id:'INC1',order_ids:['O1']}],alerts:[]}};
+ const view=projectDay(day);
+ assert.equal(view.counts.assigned,1);assert.equal(view.counts.pgp,1);assert.equal(view.status('O1'),'assigned');
+ assert.equal(matchesOrderStatus(view,'O1','pgp'),true);assert.equal(matchesOrderStatus(view,'O1','assigned'),true);
+ assert.equal(markerSummary([order],view).kind,'pgp');
+});

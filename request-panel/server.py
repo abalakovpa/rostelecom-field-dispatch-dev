@@ -51,7 +51,7 @@ class Handler(BaseHTTPRequestHandler):
                 else:self.send(error.code,json.load(error))
             return
         if self.path=='/map' or self.path.startswith(('/api/','/static/')):self.proxy();return
-        if self.path=='/catalog':self.send(200,{'buildings':buildings,'works':works,'staff':api('GET','/api/ui/bootstrap')['staff']});return
+        if self.path=='/catalog':self.send(200,api('GET','/api/ui/catalog'));return
         if self.path=='/':self.send(200,(Path(__file__).parent/'index.html').read_text(encoding='utf-8-sig'),'text/html; charset=utf-8');return
         self.send(404,{'error':'Not found'})
     def do_POST(self):
@@ -70,8 +70,9 @@ class Handler(BaseHTTPRequestHandler):
         if self.path!='/create':self.send(404,{'error':'Not found'});return
         try:
             size=int(self.headers.get('Content-Length',0));assert 0<size<65536
-            body=json.loads(self.rfile.read(size));building=next(b for b in buildings if b['building_id']==body['building_id'])
-            work=next(w for w in works if w['code']==body['work_type_code'])
+            body=json.loads(self.rfile.read(size));catalog=api('GET','/api/ui/catalog')
+            building=next(b for b in catalog['buildings'] if b['building_id']==body['building_id'])
+            work=next(w for w in catalog['works'] if w['code']==body['work_type_code'])
             day=body['date'];start=datetime.fromisoformat(day+'T'+body['time']+':00+05:00');end=start+timedelta(hours=2)
             days=api('GET','/api/ui/bootstrap')['days'];loaded=next((d for d in days if d['date']==day),None)
             if loaded is None:

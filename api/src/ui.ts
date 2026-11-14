@@ -1,4 +1,4 @@
-﻿import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { readFile } from 'node:fs/promises';
 import { resolve, sep, extname } from 'node:path';
 import type { Store } from './store.js';
@@ -14,6 +14,13 @@ export function registerUi(app:FastifyInstance,store:Store) {
   }
   app.get('/',async (_request,reply)=>asset('index.html',reply));
   app.get<{Params:{'*':string}}>('/static/*',async (request,reply)=>asset(request.params['*'],reply));
+  app.get('/api/ui/catalog',async (_request,reply)=>{
+    reply.header('Cache-Control','no-store');
+    return store.transact(async state=>({
+      buildings:(state.reference?.access_nodes ?? []).flatMap((n:any)=>n.buildings.map((b:any)=>({...b,access_node_id:n.access_node_id,technology:n.technology}))),
+      works:state.reference?.work_types ?? [],staff:state.reference?.staff ?? [],
+    }));
+  });
   app.get('/api/ui/bootstrap',async (_request,reply)=>{
     reply.header('Cache-Control','no-store');
     return store.transact(async state=>({data_source:'postgres',days:Object.values(state.days).map((d:any)=>({date:d.input.date,model_now:d.input.now,orders_count:d.input.orders.length})),service_centers:state.reference?.service_centers ?? [],staff:(state.reference?.staff ?? []).map((s:any)=>({...s,shift_start:s.shift.start,shift_end:s.shift.end})),work_types:state.reference?.work_types ?? []}));

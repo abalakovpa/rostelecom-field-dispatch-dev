@@ -1,12 +1,13 @@
 // UI projections use only the current Plan and model time, never training facts.
 export function planOverview(plan){
   return {visits:(plan?.routes||[]).reduce((n,r)=>n+r.stops.filter(s=>s.type==='VISIT').length,0),
-    unassigned:plan?.unassigned?.length||0,pgp:(plan?.pgp_groups||[]).reduce((n,g)=>n+g.order_ids.length,0)};
+    unassigned:plan?.unassigned?.length||0,pgp:new Set([...(plan?.pgp_groups||[]),...(plan?.incident_groups||[])].flatMap(g=>g.order_ids)).size};
 }
 export function projectDay(day,staff=[]){
   const assignments=new Map(),unassigned=new Map((day?.plan?.unassigned||[]).map(x=>[x.order_id,x]));
   const cancelled=new Map((day?.plan?.cancelled||[]).map(x=>[x.order_id,x])),groups=new Map();
   for(const g of day?.plan?.pgp_groups||[])for(const id of g.order_ids)groups.set(id,g);
+  const incidents=new Map();for(const g of day?.plan?.incident_groups||[])for(const id of g.order_ids)incidents.set(id,g);
   for(const r of day?.plan?.routes||[]){let n=0;for(const stop of r.stops)if(stop.type==='VISIT')assignments.set(stop.order_id,{staff:r.staff_id,number:++n,stop});}
   const now=Date.parse(day?.model_now);const status=id=>{
     if(!day?.plan)return 'pending';if(cancelled.has(id))return 'cancelled';if(groups.has(id))return 'pgp';
@@ -19,7 +20,7 @@ export function projectDay(day,staff=[]){
     if(!riskAlerts.has(a.order_id))riskAlerts.set(a.order_id,[]);riskAlerts.get(a.order_id).push(a);
   }
   const risks=new Set(riskAlerts.keys());
-  const counts={all:day?.orders?.length||0,assigned:[...assignments.keys()].filter(id=>orderIds.has(id)&&!cancelled.has(id)&&!groups.has(id)).length,unassigned:[...unassigned.keys()].filter(id=>orderIds.has(id)&&!cancelled.has(id)&&!groups.has(id)).length,pgp:[...groups.keys()].filter(id=>orderIds.has(id)&&!cancelled.has(id)).length,cancelled:[...cancelled.keys()].filter(id=>orderIds.has(id)).length,risk:risks.size};
+  const counts={all:day?.orders?.length||0,assigned:[...assignments.keys()].filter(id=>orderIds.has(id)&&!cancelled.has(id)&&!groups.has(id)).length,unassigned:[...unassigned.keys()].filter(id=>orderIds.has(id)&&!cancelled.has(id)&&!groups.has(id)).length,pgp:[...new Set([...groups.keys(),...incidents.keys()])].filter(id=>orderIds.has(id)&&!cancelled.has(id)).length,cancelled:[...cancelled.keys()].filter(id=>orderIds.has(id)).length,risk:risks.size};
   const rows=(day?.plan?.routes||[]).map(route=>{
     const person=staff.find(s=>s.staff_id===route.staff_id);const blocks=[];
     for(let i=0;i<route.stops.length;i++){
@@ -39,16 +40,17 @@ export function projectDay(day,staff=[]){
       workMin:minutes('VISIT'),travelMin:minutes('TRAVEL'),waitMin:minutes('WAIT'),
       utilization:available>0?(minutes('VISIT')+minutes('TRAVEL'))/available:0};
   });
-  return {assignments,unassigned,cancelled,groups,status,counts,rows,risks,riskAlerts};
+  return {assignments,unassigned,cancelled,groups,status,counts,rows,risks,riskAlerts,incidents};
 }
 
 export const statusLabels={pending:'План не построен',assigned:'Назначен',active:'В работе по плану',completed:'Завершён по плану',unassigned:'Не назначен',pgp:'Групповая проблема',cancelled:'Отменён',unknown:'Нет статуса в плане'};
-export const actionLabels={RESCHEDULE:'Согласовать новый слот',REASSIGN:'Передать другому сотруднику',ESCALATE:'Решение диспетчера',TRANSFER_TO_STATION:'Передать в станционное подразделение',NONE:'Без действия'};
+export const actionLabels={RESCHEDULE:'Согласовать новый слот',REASSIGN:'Передать другому сотруднику',ESCALATE:'Решение диспетчера',TRANSFER_TO_STATION:'Передать в станционное подразделение',NONE:'Без действия',INDIVIDUAL_VISITS:'Выезды по группе аварии'};
 
 // Shared by list filters and map marker summaries.
 export function matchesOrderStatus(view,id,filter='all'){
  if(filter==='all')return true;
  if(filter==='risk')return view.risks.has(id);
+ if(filter==='pgp')return view.status(id)!=='cancelled'&&(view.groups.has(id)||view.incidents?.has(id));
  if(filter==='assigned')return view.assignments.has(id)&&!['cancelled','pgp'].includes(view.status(id));
  return view.status(id)===filter;
 }
