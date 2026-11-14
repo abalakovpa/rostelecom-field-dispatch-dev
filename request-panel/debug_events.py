@@ -3,6 +3,16 @@ from datetime import datetime, timedelta
 from uuid import uuid4
 
 
+def unavailable_event(event, staff_id, body, now):
+    event.update(type='STAFF_UNAVAILABLE', staff_id=staff_id, reason='OTHER')
+    if body.get('until'):
+        until = datetime.fromisoformat(body['until'])
+        if until.tzinfo is None or until <= now:
+            raise ValueError('Конец недоступности должен быть позже модельного времени с часовым поясом')
+        event['until'] = until.isoformat()
+    return event
+
+
 def make_event(body, day):
     now = datetime.fromisoformat(day['model_now'])
     action = body['action']
@@ -15,6 +25,8 @@ def make_event(body, day):
             raise ValueError('Модельное время нельзя переводить назад')
         event.update(type='TIME_TICK', timestamp=target.isoformat())
         return event
+    if action == 'UNAVAILABLE' and body.get('staff_id'):
+        return unavailable_event(event, body['staff_id'], body, now)
     order_id = body['order_id']
     visits = [(r, s) for r in (day.get('plan') or {}).get('routes', [])
               for s in r['stops'] if s['type'] == 'VISIT' and s.get('order_id') == order_id]
@@ -38,12 +50,7 @@ def make_event(body, day):
         event.update(type='VISIT_DELAYED', staff_id=route['staff_id'], order_id=order_id,
                      expected_end=(end + timedelta(minutes=minutes)).isoformat())
     elif action == 'UNAVAILABLE':
-        event.update(type='STAFF_UNAVAILABLE', staff_id=route['staff_id'], reason='OTHER')
-        if body.get('until'):
-            until = datetime.fromisoformat(body['until'])
-            if until.tzinfo is None or until <= now:
-                raise ValueError('Конец недоступности должен быть позже модельного времени с часовым поясом')
-            event['until'] = until.isoformat()
+        return unavailable_event(event, route['staff_id'], body, now)
     else:
         raise ValueError('Неизвестное действие отладки')
     return event

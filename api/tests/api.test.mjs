@@ -115,3 +115,20 @@ test('UI plan button builds once and safely replans after events at the same mod
   assert.equal((await send('POST',path+'/plan',{})).statusCode,409);
  }finally{await app.close();}
 });
+
+test('debug identifiers include historical orders and resolve retries without reusing transferred IDs',async()=>{
+ const {app,store,send,path,day}=await fixture();
+ try{
+  await send('POST',path+'/plan',{});
+  const id=`ORD-${day.date.replaceAll('-','')}-9999`;
+  const event={event_id:'LOCAL-load-request',type:'NEW_ORDER',timestamp:day.now,order:{...day.orders[0],order_id:id}};
+  const first=await send('POST',path+'/events',event);assert.equal(first.statusCode,200,first.body);
+  const endpoint=`/api/ui/days/${day.date}/debug-orders/load-request`;
+  let usage=(await send('GET',endpoint)).json();assert.equal(usage.order_id,id);assert.ok(usage.used_order_ids.includes(day.orders[0].order_id));
+  // A source order can leave input.orders when moved to a future day.
+  store.state.days[day.date].input.orders=store.state.days[day.date].input.orders.filter(o=>o.order_id!==id);
+  usage=(await send('GET',endpoint)).json();assert.ok(usage.used_order_ids.includes(id));assert.equal(usage.order_id,id);
+  const retry=await send('POST',path+'/events',event);assert.equal(retry.json().duplicate,true);
+  const collision=await send('POST',path+'/events',{...event,event_id:'OTHER'});assert.equal(collision.json().error.code,'DUPLICATE_ORDER');
+ }finally{await app.close();}
+});

@@ -25,6 +25,21 @@ export function registerUi(app:FastifyInstance,store:Store) {
     reply.header('Cache-Control','no-store');
     return store.transact(async state=>({data_source:'postgres',days:Object.values(state.days).map((d:any)=>({date:d.input.date,model_now:d.input.now,orders_count:d.input.orders.length})),service_centers:state.reference?.service_centers ?? [],staff:(state.reference?.staff ?? []).map((s:any)=>({...s,shift_start:s.shift.start,shift_end:s.shift.end})),work_types:state.reference?.work_types ?? []}));
   });
+  app.get<{Params:{date:string;request:string}}>('/api/ui/days/:date/debug-orders/:request',async (request,reply)=>{
+    reply.header('Cache-Control','no-store');
+    return store.transact(async state=>{
+      const day=state.days[request.params.date];if(!day)throw new ApiError(404,'DAY_NOT_LOADED','Day not loaded');
+      const prior=day.events.find((e:any)=>e.type==='NEW_ORDER' && e.event_id==='LOCAL-'+request.params.request);
+      const prefix='ORD-'+request.params.date.replaceAll('-','')+'-';
+      const used=new Set<string>();
+      for(const d of Object.values(state.days) as any[]) {
+        for(const o of d.input.orders)if(o.order_id.startsWith(prefix))used.add(o.order_id);
+        for(const e of d.events)if(e.type==='NEW_ORDER' && e.order.order_id.startsWith(prefix))used.add(e.order.order_id);
+        for(const t of d.plan?.transferred_orders ?? [])if(t.order_id.startsWith(prefix))used.add(t.order_id);
+      }
+      return {order_id:prior?.order.order_id ?? null,used_order_ids:[...used]};
+    });
+  });
   app.get<{Params:{date:string}}>('/api/ui/days/:date',async (request,reply)=>{
     reply.header('Cache-Control','no-store');
     return store.transact(async state=>{

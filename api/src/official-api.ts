@@ -215,6 +215,7 @@ export function registerOfficialApi(app: FastifyInstance, store: Store, planner:
     const started=performance.now(), day=requireDay(state,request.params.date), e:any=request.body;
     if (!day.plan) fail('PLAN_NOT_FOUND','Build initial plan first',404);
     if (Object.hasOwn(day.event_results, e.event_id)) return {...day.event_results[e.event_id],duplicate:true};
+    if(e.type==='NEW_ORDER' && (Object.values(state.days) as any[]).some(d=>d.input.orders.some((o:any)=>o.order_id===e.order.order_id) || d.events.some((prior:any)=>prior.type==='NEW_ORDER' && prior.order.order_id===e.order.order_id) || d.plan?.transferred_orders?.some((t:any)=>t.order_id===e.order.order_id)))fail('DUPLICATE_ORDER',e.order.order_id);
     if (Date.parse(e.timestamp)<Date.parse(day.input.now)) fail('EVENT_OUT_OF_ORDER','Event timestamp precedes model time',409);
     applyEvent(day,e,state.reference);
     const prior=day.plan;

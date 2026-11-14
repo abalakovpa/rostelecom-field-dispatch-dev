@@ -37,3 +37,8 @@ class DebugEventsTest(unittest.TestCase):
         self.assertEqual(one['type'],'ORDER_CANCELLED')
         self.assertEqual(one['reason'],'CUSTOMER_REQUEST')
         self.assertNotEqual(one['event_id'],two['event_id'])
+    def test_staff_can_be_unavailable_without_having_an_assigned_visit(self):
+        event=make_event(dict(action='UNAVAILABLE',staff_id='OTHER'),self.day)
+        self.assertEqual(event['staff_id'],'OTHER')
+        self.assertEqual(event['type'],'STAFF_UNAVAILABLE')
+        self.assertNotIn('order_id',event)

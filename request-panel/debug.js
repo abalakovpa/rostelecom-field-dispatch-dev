@@ -58,3 +58,4 @@ $('debug-refresh').onclick=snapshot;$('date').addEventListener('change',snapshot
 // Refresh after order creation without coupling to the form implementation.
 new MutationObserver(()=>{if(!$('result').textContent.includes('Подбирается'))snapshot();}).observe($('result'),{childList:true});
 snapshot();
+import './load.js';

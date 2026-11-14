@@ -1,5 +1,6 @@
 from compatibility import work_fits_building
 from debug_events import make_event
+from order_ids import choose_order_id
 from deadlines import calculate_deadline
 """Local-only order entry tool. Uses the real REST API; no direct DB writes."""
 import json,csv,uuid,os
@@ -47,6 +48,7 @@ class Handler(BaseHTTPRequestHandler):
         except HTTPError as error:self.send(error.code,json.load(error))
     def do_GET(self):
         if self.path=='/debug.js':self.send(200,(Path(__file__).parent/'debug.js').read_text(encoding='utf-8'),'text/javascript; charset=utf-8');return
+        if self.path=='/load.js':self.send(200,(Path(__file__).parent/'load.js').read_text(encoding='utf-8'),'text/javascript; charset=utf-8');return
         if self.path.startswith('/stats?'):
             try:
                 date=parse_qs(urlsplit(self.path).query).get('date',[''])[0]
@@ -101,12 +103,14 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 now=loaded['model_now'];existing=api('GET','/api/ui/days/'+day)
                 if existing['plan'] is None:api('POST','/api/v1/days/'+day+'/plan',{'time_limit_sec':20})
-            order_id='ORD-'+day.replace('-','')+'-'+str(int(uuid.uuid4().hex[:6],16)%9000+1000)
+            request_id=str(uuid.uuid5(uuid.NAMESPACE_URL,str(body['request_id']))) if body.get('request_id') else str(uuid.uuid4())
+            usage=api('GET','/api/ui/days/'+day+'/debug-orders/'+request_id)
+            order_id=choose_order_id(day,request_id,usage)
             order={k:building[k] for k in ['building_id','address','lat','lon','building_type','access_node_id','technology']}
             latest=start+timedelta(minutes=work['max_start_delay_min'] if work['max_start_delay_min'] is not None else 120)
             order.update(order_id=order_id,work_type_code=work['code'],requires_height=work['code']=='INST_PRIVATE_VLS' or bool(building['building_type']=='PRIVATE' and building.get('overhead_line')),registered_at=now,slot={'start':start.isoformat(),'end':end.isoformat()},latest_start=latest.isoformat(),deadline=calculate_deadline(work,now,end.isoformat()),required_equipment={'ONT':1 if building['technology']=='PON' else 0,'ROUTER':1,'STB':0},is_repeat=False,previous_order_id=None)
             if body.get('staff_id'):order['_test_staff_id']=body['staff_id']
-            result=api('POST','/api/v1/days/'+day+'/events',dict(event_id='LOCAL-'+str(uuid.uuid4()),type='NEW_ORDER',timestamp=now,order=order))
+            result=api('POST','/api/v1/days/'+day+'/events',dict(event_id='LOCAL-'+request_id,type='NEW_ORDER',timestamp=now,order=order))
             source_plan=api('GET','/api/ui/days/'+day)['plan']
             dates=[day]
             for transfer in reversed((source_plan or {}).get('transferred_orders',[])):
