@@ -7,7 +7,7 @@ export function createDispatcher({state,node,time,focusOrder,chooseRoute,onStatu
  document.querySelector('.list-heading').before(statusSelect);statusSelect.onchange=()=>onStatus(statusSelect.value);
  const root=node('div','dispatch-results');document.querySelector('#map-view').after(root);
  const gantt=node('section','dispatch-section');gantt.setAttribute('aria-label','Диаграмма Ганта');gantt.id='timeline-view';gantt.dataset.panel='timeline';gantt.hidden=true;
- const heading=node('div','dispatch-heading');const title=node('div');title.append(node('h2','','План смены по времени'),node('p','','Работы, переезды и перерывы · московское время, UTC+3'));
+ const heading=node('div','dispatch-heading');const title=node('div');title.append(node('h2','','План смены по времени'),node('p','','Работы, переезды и перерывы · Екатеринбург, UTC+5'));
  const controls=node('div','gantt-controls');const find=node('input');find.type='search';find.placeholder='Найти сотрудника';find.setAttribute('aria-label','Поиск сотрудника в Ганте');find.style.cssText='border:1px solid #e1e7ef;border-radius:7px;padding:8px 10px;font-size:11px';
  const used=node('label','attention-history');const usedCheck=node('input');usedCheck.type='checkbox';used.append(usedCheck,node('span','','Только с визитами'));controls.append(find,used);heading.append(title,controls);gantt.append(heading);
  const legend=node('div','gantt-legend');const types={VISIT:'Работы',TRAVEL:'Дорога',WAIT:'Ожидание',BREAK:'Обед',RESTOCK:'Пополнение АО'};

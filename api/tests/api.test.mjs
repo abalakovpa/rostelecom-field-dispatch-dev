@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { parse } from 'yaml';
 import { buildApp } from '../dist/app.js';
+import { planAction } from '../../web/plan-action.js';
 const spec=parse(readFileSync(new URL('../spec/api_spec.yaml',import.meta.url),'utf8'));
 const example=name=>structuredClone(spec.components.examples[name].value);
 class MemoryStore {
@@ -94,5 +95,23 @@ test('panel catalog reflects active database reference rather than bundled files
   assert.equal(response.statusCode,200);
   assert.equal(response.json().buildings[0].address,'ACTIVE-DATABASE-ADDRESS');
   assert.equal(response.json().staff.length,store.state.reference.staff.length);
+ }finally{await app.close();}
+});
+
+test('UI plan button builds once and safely replans after events at the same model time',async()=>{
+ const {app,send,path,day}=await fixture();
+ try{
+  let snapshot=(await send('GET','/api/ui/days/'+day.date)).json();
+  let action=planAction(snapshot,'UI-initial');assert.equal(action.url,path+'/plan');
+  assert.equal((await send('POST',action.url,action.body)).statusCode,200);
+  const now=snapshot.model_now;
+  for(const id of ['UI-replan-1','UI-replan-2']){
+   snapshot=(await send('GET','/api/ui/days/'+day.date)).json();action=planAction(snapshot,id);
+   assert.equal(action.url,path+'/events');
+   const response=await send('POST',action.url,action.body);assert.equal(response.statusCode,200,response.body);
+   const updated=(await send('GET','/api/ui/days/'+day.date)).json();
+   assert.equal(updated.model_now,now);assert.equal(updated.plan.plan_version,snapshot.plan.plan_version+1);
+  }
+  assert.equal((await send('POST',path+'/plan',{})).statusCode,409);
  }finally{await app.close();}
 });

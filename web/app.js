@@ -1,10 +1,12 @@
 import {time,fullTime,shiftTime} from './ui-format.js';
 import {createNavigation} from './navigation.js';
+import {createEventId} from './uuid.js';
+import {planAction} from './plan-action.js';
 import {projectDay,statusLabels,actionLabels,matchesOrderStatus,markerSummary} from './dispatch-model.js';
 import {createDispatcher} from './dispatcher-view.js';
 import {MapView} from './map-view.js';
 const $=id=>document.getElementById(id);
-const state={ref:null,day:null,tab:'orders',selected:null,request:0,markers:new Map(),geometryRequest:0,status:'all',view:null};
+const state={ref:null,day:null,tab:'orders',selected:null,request:0,markers:new Map(),geometryRequest:0,status:'all',view:null,planning:false};
 const techColors={PON:'#df8b4e',FTTB:'#6d58ae',XDSL:'#548f8b',DOCSIS:'#bd7897'};
 const dateLabel=value=>new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'long',year:'numeric',timeZone:'Asia/Yekaterinburg'}).format(new Date(value+'T12:00:00+05:00'));
 function node(tag,className,text){const e=document.createElement(tag);if(className)e.className=className;if(text!==undefined)e.textContent=text;return e;}
@@ -156,17 +158,18 @@ function setTab(tab){
 async function loadDay(){
   const seq=++state.request;error('');$('refresh').disabled=true;
   $('list').replaceChildren(node('div','empty','Загружаем данные дня…'));state.day=null;state.selected=null;$('details').hidden=true;
+  updatePlanButton();
   state.view=null;state.geometryRequest++;map?.clearRoute();dispatcher.loading();
   map?.clearMarkers('orders');$('total').textContent='—';
   try {
     const day=await get('/api/ui/days/'+encodeURIComponent($('day').value));if(seq!==state.request)return;
     state.day=day;$('total').textContent=day.orders.length;
     if(!day.plan)state.status='all';
-    $('model-time').textContent=`Модельное время ${time(day.model_now)} · МСК`;
+    $('model-time').textContent=`Модельное время ${time(day.model_now)} · Екатеринбург`;
     updateRouteOptions();
     render();dispatcher.render();map?.showCity();
   }catch(e){if(seq===state.request){error(e.message);$('list').replaceChildren(node('div','empty','Данные не загружены. Нажмите «Обновить данные» после восстановления подключения.'));}}
-  finally{if(seq===state.request)$('refresh').disabled=false;}
+  finally{if(seq===state.request){$('refresh').disabled=false;updatePlanButton();}}
 }
 async function bootstrap(){
   error('');$('refresh').disabled=true;
@@ -191,7 +194,7 @@ function assigned(id){
   return state.view?.assignments.get(id)||null;
 }
 const planControls=node('div','plan-controls');
-const buildButton=node('button','build-button','Сформировать план');buildButton.id='build-plan';
+const buildButton=node('button','build-button','Сформировать план');buildButton.id='build-plan';buildButton.disabled=true;
 const routeChoice=node('select');routeChoice.id='route-choice';routeChoice.setAttribute('aria-label','Маршрут сотрудника');
 planControls.append(buildButton,routeChoice);document.querySelector('.workspace').before(planControls);
 function updateRouteOptions(){
@@ -200,16 +203,23 @@ function updateRouteOptions(){
   const routes=(state.day?.plan?.routes||[]).filter(r=>r.stops.some(s=>s.type==='VISIT'));
   for(const route of routes){const visits=route.stops.filter(s=>s.type==='VISIT');const option=node('option','',`${route.staff_id} · ${visits.length} визитов`);option.value=route.staff_id;routeChoice.append(option);}
   routeChoice.disabled=!routes.length;
-  buildButton.disabled=(state.day?.plan?.plan_version||0)>1;
-  buildButton.title=buildButton.disabled?'После событий план обновляется автоматически.':'Построить расписание выездов. Лимит вычисления — 30 секунд; длительность работ определяется типом заявки.';
+  updatePlanButton();
+}
+function updatePlanButton(){
+  buildButton.disabled=state.planning||!state.day;
+  buildButton.textContent=state.planning?'Идёт расчёт…':state.day?.plan?'Обновить план':'Сформировать план';
+  buildButton.title=state.day?.plan?'Пересчитать текущую смену, сохраняя модельное время и начатые визиты.':'Построить расписание выездов. Лимит вычисления — 30 секунд.';
 }
 buildButton.onclick=async()=>{
-  if(!state.day)return;const day=$('day').value;buildButton.disabled=true;$('day').disabled=true;buildButton.textContent='Идёт расчёт…';error('');
+  if(!state.day||state.planning)return;const day=$('day').value;state.planning=true;updatePlanButton();$('day').disabled=true;$('refresh').disabled=true;error('');
   try{
-    const response=await fetch(`/api/v1/days/${day}/plan`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({time_limit_sec:30})});
+    // Another browser or the entry panel may have advanced the shift already.
+    const latest=await get(`/api/ui/days/${encodeURIComponent(day)}`);
+    const action=planAction(latest,'UI-REPLAN-'+createEventId());
+    const response=await fetch(action.url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(action.body)});
     const result=await response.json();if(!response.ok)throw new Error(result.error?.message||'Не удалось рассчитать план.');
     await loadDay();
-  }catch(e){error(e.message);}finally{buildButton.disabled=false;$('day').disabled=false;buildButton.textContent='Обновить план';}
+  }catch(e){error(e.message);}finally{state.planning=false;$('day').disabled=!state.ref?.days.length;$('refresh').disabled=false;updatePlanButton();}
 };
 const dispatcher=createDispatcher({state,node,time,
   onStatus(status){navigation.show('map');state.status=status;state.geometryRequest++;map?.clearRoute();$('route-choice').value='';state.selected=null;$('details').hidden=true;setTab('orders');dispatcher.syncStatus();fit();},
