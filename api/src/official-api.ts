@@ -39,7 +39,7 @@ function validateOrder(o: any, reference: any, date: string, now: string) {
   if (!reference.work_types.some((w: any) => w.code === o.work_type_code)) fail('UNKNOWN_WORK_TYPE', o.work_type_code);
   const node = reference.access_nodes.find((n: any) => n.access_node_id === o.access_node_id);
   if (!node?.buildings.some((b: any) => b.building_id === o.building_id)) fail('UNKNOWN_BUILDING', o.building_id);
-  if (o.slot.start.slice(0,10) !== date || Date.parse(o.registered_at) > Date.parse(now)) fail('INVALID_ORDER_TIME', o.order_id);
+  if (new Date(Date.parse(o.slot.start) + 5 * 60 * 60 * 1000).toISOString().slice(0,10) !== date || Date.parse(o.registered_at) > Date.parse(now)) fail('INVALID_ORDER_TIME', o.order_id);
   if (Date.parse(o.slot.start) > Date.parse(o.latest_start) || Date.parse(o.latest_start) > Date.parse(o.slot.end) || Date.parse(o.slot.start) >= Date.parse(o.slot.end)) fail('INVALID_SLOT', o.order_id);
 }
 function requireDay(state: Document, date: string) {
@@ -136,16 +136,18 @@ export function registerOfficialApi(app: FastifyInstance, store: Store, planner:
   app.post<{Params:{date:string}}>('/api/v1/days/:date/events', {schema:{params,body:schemaRef('Event'),response:response('EventResult')}}, async request => store.transact(async state => {
     const started=performance.now(), day=requireDay(state,request.params.date), e:any=request.body;
     if (!day.plan) fail('PLAN_NOT_FOUND','Build initial plan first',404);
-    if (day.event_results[e.event_id]) return {...day.event_results[e.event_id],duplicate:true};
+    if (Object.hasOwn(day.event_results, e.event_id)) return {...day.event_results[e.event_id],duplicate:true};
     if (Date.parse(e.timestamp)<Date.parse(day.input.now)) fail('EVENT_OUT_OF_ORDER','Event timestamp precedes model time',409);
     applyEvent(day,e,state.reference);
     const prior=day.plan;
     const plan=await calculate(state,day,e,9000);
     const result={event_id:e.event_id,accepted:true,duplicate:false,plan_version:plan.plan_version,as_of:plan.as_of,processing_ms:Math.round(performance.now()-started),changed_staff_ids:plan.routes.filter((r:any)=>JSON.stringify(r)!==JSON.stringify(prior.routes.find((p:any)=>p.staff_id===r.staff_id))).map((r:any)=>r.staff_id),new_alerts:plan.alerts.filter((a:any)=>!prior.alerts.some((p:any)=>p.alert_id===a.alert_id))};
-    day.event_results[e.event_id]=result;
+    Object.defineProperty(day.event_results,e.event_id,{value:result,enumerable:true,writable:true,configurable:true});
     return result;
   }));
 }
+
+
 
 
 

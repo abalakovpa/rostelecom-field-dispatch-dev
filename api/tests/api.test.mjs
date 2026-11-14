@@ -57,3 +57,31 @@ test('invalid dimensions and unknown references do not replace existing state',a
 
 
 
+
+test('day accepts equivalent UTC timestamps across calendar boundary',async()=>{
+  const {app,send,day}=await fixture();
+  try {
+    // 00:30 in Ekaterinburg is 19:30 UTC on the previous calendar day.
+    const order=day.orders[0];
+    order.slot={start:'2026-10-25T19:30:00Z',end:'2026-10-25T21:30:00Z'};
+    order.latest_start=order.slot.end;
+    day.now='2026-10-25T19:00:00Z';
+    day.orders=[order];
+    const response=await send('PUT',`/api/v1/days/${day.date}`,day);
+    assert.equal(response.statusCode,200,response.body);
+  } finally {await app.close();}
+});
+
+test('event IDs inherited from Object.prototype are accepted once',async()=>{
+  const {app,send,path}=await fixture();
+  try {
+    await send('POST',path+'/plan',{});
+    const event={event_id:'__proto__',type:'TIME_TICK',timestamp:'2026-10-26T09:00:00+05:00'};
+    const response=await send('POST',path+'/events',event);
+    assert.equal(response.statusCode,200,response.body);
+    assert.equal(response.json().duplicate,false);
+    assert.equal(response.json().plan_version,2);
+    assert.equal((await send('POST',path+'/events',event)).json().duplicate,true);
+  } finally {await app.close();}
+});
+
