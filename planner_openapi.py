@@ -1,4 +1,4 @@
-﻿"""Day planning using the organizers' OpenAPI payloads."""
+"""Day planning using the organizers' OpenAPI payloads."""
 
 from dataclasses import dataclass
 from datetime import datetime, time, timedelta, timezone
@@ -141,7 +141,7 @@ class WorkerRoute:
                 self.stock = tuple(available - needed for available, needed in zip(self.stock, demand))
 
     def qualified(self, order):
-        return _has_required_skills(self.staff, order, self.day.types[order["work_type_code"]]["profiles"])
+        return (not order.get("_test_staff_id") or order["_test_staff_id"] == self.id) and _has_required_skills(self.staff, order, self.day.types[order["work_type_code"]]["profiles"])
 
     def stop(self, previous, kind, location, earliest, duration, order=None):
         drive = self.day.travel(previous.location, location)

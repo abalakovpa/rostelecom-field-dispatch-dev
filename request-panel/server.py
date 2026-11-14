@@ -1,4 +1,4 @@
-﻿from deadlines import calculate_deadline
+from deadlines import calculate_deadline
 """Local-only order entry tool. Uses the real REST API; no direct DB writes."""
 import json,csv,uuid,os
 from pathlib import Path
@@ -6,6 +6,7 @@ from datetime import datetime,timedelta
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError
+from urllib.parse import urlsplit,parse_qs
 ROOT=Path('/app')
 API_URL=os.environ.get('API_URL','http://api:8080')
 def api(method,path,payload=None):
@@ -39,8 +40,18 @@ class Handler(BaseHTTPRequestHandler):
                 raw=response.read();self.send_response(response.status);self.send_header('Content-Type',response.headers.get('Content-Type','application/octet-stream'));self.send_header('Content-Length',str(len(raw)));self.end_headers();self.wfile.write(raw)
         except HTTPError as error:self.send(error.code,json.load(error))
     def do_GET(self):
+        if self.path.startswith('/stats?'):
+            try:
+                date=parse_qs(urlsplit(self.path).query).get('date',[''])[0]
+                payload=api('GET','/api/ui/days/'+date);plan=payload.get('plan')
+                total=len(payload['orders']);assigned=len({s['order_id'] for r in (plan or {}).get('routes',[]) for s in r['stops'] if s['type']=='VISIT'})
+                self.send(200,{'date':date,'total':total,'assigned':assigned,'unassigned':len((plan or {}).get('unassigned',[])),'pending':total if plan is None else 0,'transferred':len((plan or {}).get('transferred_orders',[])),'risks':len({a['order_id'] for a in (plan or {}).get('alerts',[]) if a['type']=='LATE_RISK' and a['status']=='ACTIVE' and a.get('order_id')}),'plan_built':plan is not None})
+            except HTTPError as error:
+                if error.code==404:self.send(200,{'date':date,'total':0,'assigned':0,'unassigned':0,'pending':0,'transferred':0,'risks':0,'plan_built':False})
+                else:self.send(error.code,json.load(error))
+            return
         if self.path=='/map' or self.path.startswith(('/api/','/static/')):self.proxy();return
-        if self.path=='/catalog':self.send(200,{'buildings':buildings,'works':works});return
+        if self.path=='/catalog':self.send(200,{'buildings':buildings,'works':works,'staff':api('GET','/api/ui/bootstrap')['staff']});return
         if self.path=='/':self.send(200,(Path(__file__).parent/'index.html').read_text(encoding='utf-8-sig'),'text/html; charset=utf-8');return
         self.send(404,{'error':'Not found'})
     def do_POST(self):
@@ -72,6 +83,7 @@ class Handler(BaseHTTPRequestHandler):
             order={k:building[k] for k in ['building_id','address','lat','lon','building_type','access_node_id','technology']}
             latest=start+timedelta(minutes=work['max_start_delay_min'] if work['max_start_delay_min'] is not None else 120)
             order.update(order_id=order_id,work_type_code=work['code'],requires_height=bool(building.get('overhead_line')),registered_at=now,slot={'start':start.isoformat(),'end':end.isoformat()},latest_start=latest.isoformat(),deadline=calculate_deadline(work,now,end.isoformat()),required_equipment={'ONT':1 if building['technology']=='PON' else 0,'ROUTER':1,'STB':0},is_repeat=False,previous_order_id=None)
+            if body.get('staff_id'):order['_test_staff_id']=body['staff_id']
             result=api('POST','/api/v1/days/'+day+'/events',dict(event_id='LOCAL-'+str(uuid.uuid4()),type='NEW_ORDER',timestamp=now,order=order))
             source_plan=api('GET','/api/ui/days/'+day)['plan']
             dates=[day]

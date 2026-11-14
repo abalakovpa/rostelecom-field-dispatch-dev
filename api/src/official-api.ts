@@ -37,6 +37,13 @@ function validateMatrix(m: any, reference?: any) {
 }
 function validateOrder(o: any, reference: any, date: string, now: string) {
   if (!reference.work_types.some((w: any) => w.code === o.work_type_code)) fail('UNKNOWN_WORK_TYPE', o.work_type_code);
+  if(o._test_staff_id !== undefined) {
+    const person=reference.staff.find((p:any)=>p.staff_id===o._test_staff_id);
+    const work=reference.work_types.find((w:any)=>w.code===o.work_type_code);
+    if(!person)fail('UNKNOWN_STAFF','Selected test employee does not exist');
+    if(!person.profiles.some((profile:string)=>work.profiles.includes(profile)) || !person.technologies.includes(o.technology) || (o.requires_height && !person.height_permit))fail('STAFF_NOT_QUALIFIED','Selected employee lacks the required profile, technology or height permit');
+    if(Object.entries(o.required_equipment).some(([kind,count])=>Number(count)>(person.equipment_capacity[kind] ?? 0)))fail('NO_EQUIPMENT','Equipment demand exceeds selected employee capacity');
+  }
   const node = reference.access_nodes.find((n: any) => n.access_node_id === o.access_node_id);
   if (!node?.buildings.some((b: any) => b.building_id === o.building_id)) fail('UNKNOWN_BUILDING', o.building_id);
   if (new Date(Date.parse(o.slot.start) + 5 * 60 * 60 * 1000).toISOString().slice(0,10) !== date || Date.parse(o.registered_at) > Date.parse(now)) fail('INVALID_ORDER_TIME', o.order_id);

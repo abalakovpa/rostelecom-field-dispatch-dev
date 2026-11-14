@@ -90,3 +90,18 @@ class SameDayPriorityTest(unittest.TestCase):
         self.assertFalse(result['_future_transfers'])
         visit=next(s for r in result['routes'] for s in r['stops'] if s['type']=='VISIT')
         self.assertTrue(visit['end'].startswith(day['date']))
+
+class SelectedEmployeeTest(unittest.TestCase):
+    def test_selected_employee_receives_both_orders_and_delay_creates_risk(self):
+        reference,matrix,day=sample();day['orders']=day['orders'][:2]
+        second=deepcopy(reference['staff'][0]);second['staff_id']='ST-002';reference['staff'].append(second)
+        for o in day['orders']:o['_test_staff_id']='ST-001'
+        initial=calculate(dict(reference=reference,matrix=matrix,day=day,time_limit_sec=1))
+        self.assertEqual(sum(s['type']=='VISIT' for r in initial['routes'] if r['staff_id']=='ST-001' for s in r['stops']),2)
+        self.assertFalse(any(s['type']=='VISIT' for r in initial['routes'] if r['staff_id']=='ST-002' for s in r['stops']))
+        event={'event_id':'TEST-DELAY','type':'VISIT_DELAYED','timestamp':at('09:30:00'),'staff_id':'ST-001','order_id':day['orders'][0]['order_id'],'expected_end':at('12:00:00')}
+        day['now']=event['timestamp']
+        updated=calculate(dict(reference=reference,matrix=matrix,day=day,previous_plan=initial,event=event,time_limit_sec=2))
+        self.assertTrue(updated['_order_updates'])
+        self.assertTrue(any(a['type']=='LATE_RISK' for a in updated['alerts']))
+        self.assertTrue(all(r['staff_id']=='ST-001' for r in updated['routes'] if any(s['type']=='VISIT' for s in r['stops'])))

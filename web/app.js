@@ -124,6 +124,11 @@ function selectOrder(order){
   if(map)map.flyTo([order.lat,order.lon],15,{duration:.6});
 }
 function render(){
+  let daily=document.getElementById('daily-order-counts');
+  if(!daily){daily=node('div','statusbar');daily.id='daily-order-counts';document.querySelector('.statusbar').after(daily);}
+  const dailyCounts=state.view?.counts;
+  daily.textContent=state.day?`Наряды за ${state.day.date}: всего ${dailyCounts?.all ?? state.day.orders.length} · назначено ${dailyCounts?.assigned ?? 0} · не назначено ${dailyCounts?.unassigned ?? 0}`+(state.day.plan?'':` · ожидают расчёта ${state.day.orders.length}`):'Выберите день';
+
   let summary=document.getElementById('automatic-policy-summary');
   if(!summary){summary=node('div','statusbar');summary.id='automatic-policy-summary';document.querySelector('.statusbar').after(summary);}
   const plan=state.day?.plan;
