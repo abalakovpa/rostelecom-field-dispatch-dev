@@ -60,11 +60,11 @@ def select_spread(candidates,count,rng,used,min_distance=100):
     return chosen
 
 def main():
-    cache=OUT/'provenance'/'osm_ordzhonikidzevsky_raw.json'
+    cache=OUT.parent/'tmp'/'geodata-cache'/'osm_ordzhonikidzevsky_raw.json'
     if not cache.exists() and os.getenv('OSM_DIRECT')=='1':
         context=ssl.create_default_context(cafile=certifi.where())
         def download(url):
-            cache_path=OUT/'provenance'/('osm_download_'+__import__('hashlib').sha256(url.encode()).hexdigest()[:16]+'.cache')
+            cache_path=cache.parent/('osm_download_'+__import__('hashlib').sha256(url.encode()).hexdigest()[:16]+'.cache')
             if cache_path.exists():return cache_path.read_bytes()
             with urlopen(Request(url,headers={'User-Agent':'DispatcherHackathon/1.0'}),timeout=45,context=context) as stream:data=stream.read()
             cache_path.parent.mkdir(parents=True,exist_ok=True);cache_path.write_bytes(data);return data

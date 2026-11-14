@@ -1,0 +1,62 @@
+[
+  {
+    "file": "bootstrap.json",
+    "schema": "UiBootstrap",
+    "note": ""
+  },
+  {
+    "file": "bootstrap-empty.json",
+    "schema": "UiBootstrap",
+    "note": ""
+  },
+  {
+    "file": "day-planned.json",
+    "schema": "UiDay",
+    "note": ""
+  },
+  {
+    "file": "day-unplanned.json",
+    "schema": "UiDay",
+    "note": ""
+  },
+  {
+    "file": "day-empty.json",
+    "schema": "UiDay",
+    "note": ""
+  },
+  {
+    "file": "route-geometry.json",
+    "schema": "UiRouteGeometry",
+    "note": "Координаты схематичны: только пример структуры, не дорожный маршрут и не источник матрицы."
+  },
+  {
+    "file": "geometry-unavailable.json",
+    "schema": "ErrorResponse",
+    "note": ""
+  },
+  {
+    "file": "day-not-loaded.json",
+    "schema": "ErrorResponse",
+    "note": ""
+  },
+  {
+    "file": "plan-request.json",
+    "schema": "PlanRequest",
+    "note": ""
+  },
+  {
+    "file": "time-tick-request.json",
+    "schema": "Event",
+    "note": ""
+  },
+  {
+    "file": "new-order-request.json",
+    "schema": "Event",
+    "note": ""
+  },
+  {
+    "file": "event-result.json",
+    "schema": "EventResult",
+    "note": ""
+  }
+]

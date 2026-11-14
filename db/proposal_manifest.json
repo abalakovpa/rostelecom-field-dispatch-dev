@@ -1,0 +1,8 @@
+{
+  "status": "needs_server_review",
+  "target_postgresql_major": 16,
+  "automatic_application": false,
+  "proposal": "proposals/001_dispatch_schema.sql",
+  "upgrade_existing_database": "Create a new delta in the team migration runner after schema comparison",
+  "excluded_demo_migration": "demo/db/migrations/002_dataset_state.sql"
+}

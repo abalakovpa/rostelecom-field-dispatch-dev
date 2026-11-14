@@ -53,7 +53,7 @@ def main():
             insert('orders',dict(date=day)|{k:v for k,v in order.items() if k!='slot'}|
                 dict(slot_start=order['slot']['start'],slot_end=order['slot']['end']))
     output+=['COMMIT;',"SELECT 'service_centers' AS entity, count(*) FROM dispatch.service_centers UNION ALL SELECT 'staff',count(*) FROM dispatch.staff UNION ALL SELECT 'orders',count(*) FROM dispatch.orders UNION ALL SELECT 'training_orders',count(*) FROM dispatch.training_orders;"]
-    target=ROOT/'db'/'seeds'/'001_generated_data.sql';target.parent.mkdir(parents=True,exist_ok=True)
+    target=ROOT/'demo'/'db'/'seeds'/'001_generated_data.sql';target.parent.mkdir(parents=True,exist_ok=True)
     target.write_text('\n'.join(output)+'\n',encoding='utf-8');print(f'SQL import created: {target}')
 
 if __name__=='__main__':main()

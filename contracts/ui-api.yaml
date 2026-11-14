@@ -1,0 +1,382 @@
+openapi: 3.0.3
+info:
+  title: Предложение UI-расширений для Fastify
+  version: 0.1.0
+  description: На согласование. Только /api/ui; основной контракт без изменений находится
+    в ../api_spec.yaml. Не описывает FastAPI как командный сервер.
+servers:
+- url: /
+paths:
+  /api/ui/bootstrap:
+    get:
+      summary: Справочники и доступные дни карты
+      operationId: uiBootstrap
+      responses:
+        '200':
+          description: Согласованный снимок справочников и дней
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UiBootstrap'
+        '503':
+          description: Хранилище недоступно
+          content:
+            application/json:
+              schema:
+                $ref: ../api_spec.yaml#/components/schemas/ErrorResponse
+  /api/ui/days/{date}:
+    parameters:
+    - &id001
+      name: date
+      in: path
+      required: true
+      schema:
+        type: string
+        format: date
+    get:
+      summary: Наряды и текущий план дня
+      operationId: uiDay
+      responses:
+        '200':
+          description: Согласованный снимок дня; plan=null до расчёта
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UiDay'
+        '400':
+          description: Некорректная дата
+          content:
+            application/json:
+              schema:
+                $ref: ../api_spec.yaml#/components/schemas/ErrorResponse
+        '404':
+          description: День не загружен
+          content:
+            application/json:
+              schema:
+                $ref: ../api_spec.yaml#/components/schemas/ErrorResponse
+        '503':
+          description: Хранилище недоступно
+          content:
+            application/json:
+              schema:
+                $ref: ../api_spec.yaml#/components/schemas/ErrorResponse
+  /api/ui/days/{date}/routes/{staff_id}/geometry:
+    parameters:
+    - *id001
+    - name: staff_id
+      in: path
+      required: true
+      schema: &id002
+        type: string
+    get:
+      summary: Дорожная геометрия выбранного маршрута
+      operationId: uiRouteGeometry
+      responses:
+        '200':
+          description: GeoJSON и направленные сегменты актуальной версии
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UiRouteGeometry'
+        '400':
+          description: Некорректные параметры
+          content:
+            application/json:
+              schema:
+                $ref: ../api_spec.yaml#/components/schemas/ErrorResponse
+        '404':
+          description: Нет дня, плана или сотрудника
+          content:
+            application/json:
+              schema:
+                $ref: ../api_spec.yaml#/components/schemas/ErrorResponse
+        '502':
+          description: Сервис дорожной геометрии недоступен
+          content:
+            application/json:
+              schema:
+                $ref: ../api_spec.yaml#/components/schemas/ErrorResponse
+        '503':
+          description: Хранилище недоступно
+          content:
+            application/json:
+              schema:
+                $ref: ../api_spec.yaml#/components/schemas/ErrorResponse
+components:
+  schemas:
+    UiSource:
+      type: string
+      enum:
+      - postgres
+      - demo
+    UiDaySummary:
+      type: object
+      required:
+      - date
+      - model_now
+      - orders_count
+      properties:
+        date:
+          type: string
+          format: date
+        model_now:
+          $ref: ../api_spec.yaml#/components/schemas/DateTime
+        orders_count:
+          type: integer
+          minimum: 0
+    UiServiceCenter:
+      type: object
+      required:
+      - service_center_id
+      - name
+      - address
+      - lat
+      - lon
+      properties:
+        service_center_id: *id002
+        name: *id002
+        address: *id002
+        lat: &id003
+          type: number
+        lon: *id003
+    UiStaff:
+      type: object
+      required:
+      - staff_id
+      - service_center_id
+      - profiles
+      - technologies
+      - height_permit
+      - shift_start
+      - shift_end
+      properties:
+        staff_id: *id002
+        display_name:
+          type: string
+          nullable: true
+        service_center_id: *id002
+        profiles:
+          type: array
+          items:
+            $ref: ../api_spec.yaml#/components/schemas/Profile
+        technologies:
+          type: array
+          items:
+            $ref: ../api_spec.yaml#/components/schemas/Technology
+        height_permit:
+          type: boolean
+        shift_start: &id004
+          type: string
+          pattern: ^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$
+        shift_end: *id004
+    UiWorkType:
+      type: object
+      required:
+      - code
+      - name
+      - duration_min
+      - profiles
+      properties:
+        code:
+          $ref: ../api_spec.yaml#/components/schemas/WorkTypeCode
+        name: *id002
+        duration_min:
+          type: integer
+          minimum: 1
+        profiles:
+          type: array
+          items:
+            $ref: ../api_spec.yaml#/components/schemas/Profile
+    UiBootstrap:
+      type: object
+      required:
+      - data_source
+      - days
+      - service_centers
+      - staff
+      - work_types
+      properties:
+        data_source:
+          $ref: '#/components/schemas/UiSource'
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/UiDaySummary'
+        service_centers:
+          type: array
+          items:
+            $ref: '#/components/schemas/UiServiceCenter'
+        staff:
+          type: array
+          items:
+            $ref: '#/components/schemas/UiStaff'
+        work_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/UiWorkType'
+    UiOrder:
+      type: object
+      required:
+      - order_id
+      - work_type_code
+      - technology
+      - building_id
+      - address
+      - lat
+      - lon
+      - building_type
+      - requires_height
+      - access_node_id
+      - registered_at
+      - latest_start
+      - deadline
+      - required_equipment
+      - is_repeat
+      - slot_start
+      - slot_end
+      properties:
+        order_id:
+          type: string
+          pattern: ^ORD-[0-9]{8}-[0-9]{4}$
+          example: ORD-20261026-0001
+        work_type_code:
+          $ref: ../api_spec.yaml#/components/schemas/WorkTypeCode
+        technology:
+          $ref: ../api_spec.yaml#/components/schemas/Technology
+        building_id:
+          type: string
+          description: Дом из реестра `access_nodes[].buildings[]`; по нему берётся
+            время в пути из матрицы
+          example: B-00412
+        address:
+          type: string
+          example: г. Екатеринбург, ул. Учителей, 18
+        lat:
+          type: number
+          format: double
+          example: 56.8712
+        lon:
+          type: number
+          format: double
+          example: 60.6531
+        building_type:
+          $ref: ../api_spec.yaml#/components/schemas/BuildingType
+        requires_height:
+          type: boolean
+          description: Частный сектор с ВЛС — нужен допуск к работам на высоте
+        access_node_id:
+          type: string
+          description: Узел доступа, через который подключён абонент; используется
+            для выявления ПГП
+          example: AN-0031
+        registered_at:
+          allOf:
+          - $ref: ../api_spec.yaml#/components/schemas/DateTime
+          description: Момент регистрации наряда
+        latest_start:
+          allOf:
+          - $ref: ../api_spec.yaml#/components/schemas/DateTime
+          description: 'Последний допустимый момент начала визита:
+
+            `min(slot.end, slot.start + max_start_delay_min)`; для инсталляции — `slot.start
+            + 10 мин`
+
+            '
+        deadline:
+          allOf:
+          - $ref: ../api_spec.yaml#/components/schemas/DateTime
+          description: 'Контрольный срок — момент, до которого работы должны быть
+            завершены. Уже рассчитан по
+
+            типу работ, `registered_at`, признаку повторности и производственному
+            календарю.
+
+            Для типов с контрольным сроком `SLOT` — `latest_start + duration_min`
+
+            '
+        required_equipment:
+          $ref: ../api_spec.yaml#/components/schemas/Equipment
+        is_repeat:
+          type: boolean
+          description: Повторное обращение — тот же абонент и услуга в течение 7 дней
+            после закрытия предыдущего наряда; вес в оценке — 2
+        previous_order_id:
+          type: string
+          nullable: true
+          description: Предыдущий наряд абонента для повторного обращения (может отсутствовать
+            в наборе)
+        slot_start:
+          $ref: ../api_spec.yaml#/components/schemas/DateTime
+        slot_end:
+          $ref: ../api_spec.yaml#/components/schemas/DateTime
+    UiDay:
+      type: object
+      required:
+      - data_source
+      - date
+      - model_now
+      - orders
+      - plan
+      properties:
+        data_source:
+          $ref: '#/components/schemas/UiSource'
+        date:
+          type: string
+          format: date
+        model_now:
+          $ref: ../api_spec.yaml#/components/schemas/DateTime
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/UiOrder'
+        plan:
+          allOf:
+          - $ref: ../api_spec.yaml#/components/schemas/Plan
+          nullable: true
+    UiLineString:
+      type: object
+      required:
+      - type
+      - coordinates
+      properties:
+        type:
+          type: string
+          enum:
+          - LineString
+        coordinates:
+          type: array
+          items:
+            type: array
+            minItems: 2
+            maxItems: 2
+            items: *id003
+    UiSegment:
+      type: object
+      required:
+      - from_stop
+      - to_stop
+      - geometry
+      properties:
+        from_stop: *id002
+        to_stop: *id002
+        geometry:
+          $ref: '#/components/schemas/UiLineString'
+    UiRouteGeometry:
+      type: object
+      required:
+      - staff_id
+      - plan_version
+      - geometry
+      - segments
+      properties:
+        staff_id: *id002
+        plan_version:
+          type: integer
+          minimum: 1
+        geometry:
+          $ref: '#/components/schemas/UiLineString'
+        segments:
+          type: array
+          items:
+            $ref: '#/components/schemas/UiSegment'

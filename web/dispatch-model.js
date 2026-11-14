@@ -1,4 +1,8 @@
 // UI projections use only the current Plan and model time, never training facts.
+export function planOverview(plan){
+  return {visits:(plan?.routes||[]).reduce((n,r)=>n+r.stops.filter(s=>s.type==='VISIT').length,0),
+    unassigned:plan?.unassigned?.length||0,pgp:(plan?.pgp_groups||[]).reduce((n,g)=>n+g.order_ids.length,0)};
+}
 export function projectDay(day,staff=[]){
   const assignments=new Map(),unassigned=new Map((day?.plan?.unassigned||[]).map(x=>[x.order_id,x]));
   const cancelled=new Map((day?.plan?.cancelled||[]).map(x=>[x.order_id,x])),groups=new Map();

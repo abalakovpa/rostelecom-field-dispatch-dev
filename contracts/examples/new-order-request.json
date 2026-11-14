@@ -1,0 +1,31 @@
+{
+  "event_id": "EV-20261012-0002",
+  "type": "NEW_ORDER",
+  "timestamp": "2026-10-12T10:00:00+05:00",
+  "order": {
+    "order_id": "ORD-20261012-0351",
+    "work_type_code": "REPAIR",
+    "technology": "DOCSIS",
+    "building_id": "B-00077",
+    "address": "Екатеринбург, улица Молодёжи, 3",
+    "lat": 56.90348405,
+    "lon": 60.57342419125376,
+    "building_type": "PRIVATE",
+    "requires_height": true,
+    "access_node_id": "AN-0020",
+    "registered_at": "2026-10-12T10:00:00+05:00",
+    "slot": {
+      "start": "2026-10-12T15:00:00+05:00",
+      "end": "2026-10-12T17:00:00+05:00"
+    },
+    "latest_start": "2026-10-12T17:00:00+05:00",
+    "deadline": "2026-10-13T10:00:00+05:00",
+    "required_equipment": {
+      "ONT": 0,
+      "ROUTER": 1,
+      "STB": 0
+    },
+    "is_repeat": false,
+    "previous_order_id": null
+  }
+}

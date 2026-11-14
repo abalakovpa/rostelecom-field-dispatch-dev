@@ -13,3 +13,7 @@ coverage/
 # Local runtime and generated scenario snapshots
 tmp/
 data/qa/
+# Local secrets, environments and downloaded raw geography
+.venv*/
+data/provenance/osm_download_*.cache
+data/provenance/osm_ordzhonikidzevsky_raw.json

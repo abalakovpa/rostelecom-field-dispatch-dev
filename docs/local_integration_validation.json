@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "ui_contract_examples": 12,
+  "map_and_contract_python_tests": 17,
+  "map_node_tests": 4,
+  "legacy_demo_python_tests": 26,
+  "legacy_tests_skipped": 6,
+  "live_demo_source": "demo",
+  "live_demo_contract": "passed",
+  "official_spec_unchanged": true,
+  "original_files_checked": 93,
+  "original_files_changed": [],
+  "migrations_applied": false,
+  "postgres16_integration_tested": false,
+  "fastify_joint_start_tested": false,
+  "github_push": false
+}

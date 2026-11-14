@@ -1,0 +1,39 @@
+name: rostelecom-dispatch-demo
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: demo/backend/api/Dockerfile
+    environment:
+      DATA_SOURCE: postgres
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-dispatcher_next}
+      POSTGRES_USER: ${POSTGRES_USER:-dispatcher}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Create .env from .env.example and set password}
+    ports:
+      - "127.0.0.1:${APP_PORT:-8083}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dispatcher_next}
+      POSTGRES_USER: ${POSTGRES_USER:-dispatcher}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Create .env from .env.example and set password}
+      TZ: Asia/Yekaterinburg
+      PGTZ: Asia/Yekaterinburg
+    ports:
+      - "127.0.0.1:${DOCKER_POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../db/proposals/001_dispatch_schema.sql:/docker-entrypoint-initdb.d/001_initial.sql:ro
+      - ./db/migrations/002_dataset_state.sql:/docker-entrypoint-initdb.d/002_dataset_state.sql:ro
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+volumes:
+  postgres_data:

@@ -1,4 +1,4 @@
-import {projectDay,statusLabels,actionLabels} from './dispatch-model.js';
+import {projectDay,planOverview,statusLabels,actionLabels} from './dispatch-model.js';
 import {createDispatcher} from './dispatcher-view.js';
 const $=id=>document.getElementById(id);
 const state={ref:null,day:null,tab:'orders',selected:null,request:0,markers:new Map(),geometryRequest:0,status:'all',view:null};
@@ -147,7 +147,8 @@ async function loadDay(){
     if(!day.plan)state.status='all';
     $('model-time').textContent=`Модельное время ${time(day.model_now)} · UTC+5`;
     $('plan-status').textContent=day.plan?`План · версия ${day.plan.plan_version}`:'План ещё не построен';
-    $('plan-note').textContent=day.plan?`Назначено ${day.plan.summary.visits_planned} · Не назначено ${day.plan.unassigned.length} · ПГП ${day.plan.summary.pgp_orders}`:'Готов к первому расчёту';
+    const overview=planOverview(day.plan);
+    $('plan-note').textContent=day.plan?`Назначено ${overview.visits} · Не назначено ${overview.unassigned} · ПГП ${overview.pgp}`:'Готов к первому расчёту';
     updateRouteOptions();
     updateEventExample();
     render();dispatcher.render();fit();
@@ -211,6 +212,9 @@ routeChoice.onchange=async()=>{
   try{
     const result=await get(`/api/ui/days/${$('day').value}/routes/${route.staff_id}/geometry`);
     if(seq!==state.geometryRequest)return;
+    if(result.staff_id!==route.staff_id||result.plan_version!==state.day.plan.plan_version){
+      throw new Error('План изменился. Обновите данные и выберите маршрут повторно.');
+    }
     const palette=['#159fe8','#20bc8b','#ef638a','#69b844','#35bbc6','#e2ac21','#6294ef','#e777b0'];
     const line=L.featureGroup().addTo(routeLayer);
     for(const [i,segment] of result.segments.entries()){

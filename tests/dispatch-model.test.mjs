@@ -1,8 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {projectDay} from '../web/dispatch-model.js';
+import {projectDay,planOverview} from '../web/dispatch-model.js';
 const at=t=>`2026-10-12T${t}:00+05:00`;
 const stop=(type,start,end,extra={})=>({type,arrival:at(start),start:at(start),end:at(end),travel_sec:0,...extra});
+
+test('official Plan without optional summary supplies UI counters',()=>{
+ const plan={routes:[{stops:[{type:'DEPOT_START'},{type:'VISIT'},{type:'VISIT'}]}],unassigned:[{order_id:'3'}],pgp_groups:[{order_ids:['4','5','6']}]};
+ assert.deepEqual(planOverview(plan),{visits:2,unassigned:1,pgp:3});
+ assert.deepEqual(planOverview(null),{visits:0,unassigned:0,pgp:0});
+});
 test('statuses use model time, cancellation and groups; no plan is pending',()=>{
  const day={model_now:at('10:00'),orders:[1,2,3,4,5,6].map(id=>({order_id:String(id)})),plan:{routes:[{staff_id:'S',stops:[stop('VISIT','09:00','09:30',{order_id:'1'}),stop('VISIT','09:45','10:30',{order_id:'2'}),stop('VISIT','11:00','12:00',{order_id:'3'})]}],unassigned:[{order_id:'4'}],cancelled:[{order_id:'5'}],pgp_groups:[{order_ids:['6']} ]}};
  const view=projectDay(day);assert.deepEqual(['1','2','3','4','5','6'].map(view.status),['completed','active','assigned','unassigned','cancelled','pgp']);assert.equal(view.counts.assigned,3);

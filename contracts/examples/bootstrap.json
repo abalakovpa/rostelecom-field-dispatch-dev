@@ -1,0 +1,198 @@
+{
+  "data_source": "demo",
+  "days": [
+    {
+      "date": "2026-10-12",
+      "model_now": "2026-10-12T08:30:00+05:00",
+      "orders_count": 1
+    }
+  ],
+  "service_centers": [
+    {
+      "service_center_id": "SC-01",
+      "name": "Синтетический СЦ 1",
+      "address": "Екатеринбург, улица Фрезеровщиков, 82",
+      "lat": 56.906890450000006,
+      "lon": 60.6354310718653,
+      "opening_hours": {
+        "open": "08:00",
+        "close": "21:00"
+      },
+      "restock_duration_min": 15
+    },
+    {
+      "service_center_id": "SC-02",
+      "name": "Синтетический СЦ 2",
+      "address": "Екатеринбург, улица Баумана, 4А",
+      "lat": 56.88774655,
+      "lon": 60.61805595,
+      "opening_hours": {
+        "open": "08:00",
+        "close": "21:00"
+      },
+      "restock_duration_min": 15
+    },
+    {
+      "service_center_id": "SC-03",
+      "name": "Синтетический СЦ 3",
+      "address": "Екатеринбург, улица Корепина, 29",
+      "lat": 56.88947455,
+      "lon": 60.63510039969158,
+      "opening_hours": {
+        "open": "08:00",
+        "close": "21:00"
+      },
+      "restock_duration_min": 15
+    },
+    {
+      "service_center_id": "SC-04",
+      "name": "Синтетический СЦ 4",
+      "address": "Екатеринбург, улица Бакинских Комиссаров, 93",
+      "lat": 56.90153545,
+      "lon": 60.581922446527244,
+      "opening_hours": {
+        "open": "08:00",
+        "close": "21:00"
+      },
+      "restock_duration_min": 15
+    },
+    {
+      "service_center_id": "SC-05",
+      "name": "Синтетический СЦ 5",
+      "address": "Екатеринбург, проспект Космонавтов, 59А",
+      "lat": 56.90763795,
+      "lon": 60.61196570654139,
+      "opening_hours": {
+        "open": "08:00",
+        "close": "21:00"
+      },
+      "restock_duration_min": 15
+    }
+  ],
+  "staff": [
+    {
+      "staff_id": "ST-001",
+      "display_name": "Сотрудник 001",
+      "service_center_id": "SC-01",
+      "profiles": [
+        "LTP3"
+      ],
+      "technologies": [
+        "PON",
+        "FTTB",
+        "XDSL",
+        "DOCSIS"
+      ],
+      "height_permit": false,
+      "shift_start": "09:00",
+      "shift_end": "18:00"
+    }
+  ],
+  "work_types": [
+    {
+      "code": "INST_PON_MKD",
+      "name": "Инсталляция ШПД/IPTV, МКД, PON",
+      "profiles": [
+        "INSTALL"
+      ],
+      "duration_min": 90,
+      "max_start_delay_min": 10,
+      "deadline_kind": "WORKING_DAYS",
+      "deadline_value": 3,
+      "repeat_deadline_value": null,
+      "pgp_relevant": false
+    },
+    {
+      "code": "INST_FTTB_MKD",
+      "name": "Инсталляция ШПД/IPTV, МКД, FTTB",
+      "profiles": [
+        "INSTALL"
+      ],
+      "duration_min": 60,
+      "max_start_delay_min": 10,
+      "deadline_kind": "WORKING_DAYS",
+      "deadline_value": 3,
+      "repeat_deadline_value": null,
+      "pgp_relevant": false
+    },
+    {
+      "code": "INST_PRIVATE_VLS",
+      "name": "Инсталляция, частный сектор, с ВЛС",
+      "profiles": [
+        "INSTALL"
+      ],
+      "duration_min": 180,
+      "max_start_delay_min": 10,
+      "deadline_kind": "WORKING_DAYS",
+      "deadline_value": 5,
+      "repeat_deadline_value": null,
+      "pgp_relevant": false
+    },
+    {
+      "code": "ADD_SERVICE",
+      "name": "Доподключение услуги (IPTV, Wi-Fi-роутер)",
+      "profiles": [
+        "INSTALL"
+      ],
+      "duration_min": 40,
+      "max_start_delay_min": 10,
+      "deadline_kind": "SLOT",
+      "deadline_value": null,
+      "repeat_deadline_value": null,
+      "pgp_relevant": false
+    },
+    {
+      "code": "SURVEY_PRIVATE",
+      "name": "Обследование (частный сектор)",
+      "profiles": [
+        "INSTALL",
+        "LTP3"
+      ],
+      "duration_min": 45,
+      "max_start_delay_min": null,
+      "deadline_kind": "WORKING_DAYS",
+      "deadline_value": 2,
+      "repeat_deadline_value": null,
+      "pgp_relevant": false
+    },
+    {
+      "code": "REPAIR",
+      "name": "Устранение неисправности (обращение абонента)",
+      "profiles": [
+        "LTP3"
+      ],
+      "duration_min": 60,
+      "max_start_delay_min": null,
+      "deadline_kind": "HOURS",
+      "deadline_value": 24,
+      "repeat_deadline_value": 12,
+      "pgp_relevant": true
+    },
+    {
+      "code": "DEGRADATION",
+      "name": "Устранение деградации, выявленной системой мониторинга качества",
+      "profiles": [
+        "LTP3"
+      ],
+      "duration_min": 45,
+      "max_start_delay_min": null,
+      "deadline_kind": "HOURS",
+      "deadline_value": 48,
+      "repeat_deadline_value": null,
+      "pgp_relevant": true
+    },
+    {
+      "code": "DISMANTLE",
+      "name": "Демонтаж АО",
+      "profiles": [
+        "LTP3"
+      ],
+      "duration_min": 30,
+      "max_start_delay_min": null,
+      "deadline_kind": "WORKING_DAYS",
+      "deadline_value": 5,
+      "repeat_deadline_value": null,
+      "pgp_relevant": false
+    }
+  ]
+}
