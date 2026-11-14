@@ -1,4 +1,4 @@
-﻿import {createEventId} from './uuid.js';
+import {createEventId} from './uuid.js';
 import {projectDay,planOverview,statusLabels,actionLabels} from './dispatch-model.js';
 import {createDispatcher} from './dispatcher-view.js';
 const $=id=>document.getElementById(id);
@@ -103,17 +103,19 @@ function detailRow(label,value){const row=node('div','detail-row');row.append(no
 function selectOrder(order){
   state.selected=order.order_id;render();
   const box=$('details');box.replaceChildren();box.hidden=false;
+  const assignment=assigned(order.order_id);
+  const fullTime=value=>new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Yekaterinburg'}).format(new Date(value));
   const close=node('button','close','×');close.setAttribute('aria-label','Закрыть карточку');close.addEventListener('click',()=>{box.hidden=true;state.selected=null;render();});
   box.append(close,node('div','detail-id',order.order_id),node('h2','',order.address),node('p','',work(order).name),
     detailRow('Статус',statusLabels[state.view.status(order.order_id)]),
     detailRow('Технология',order.technology),detailRow('Слот',`${time(order.slot_start)}–${time(order.slot_end)}`),
-    detailRow('Начать не позднее',time(order.latest_start)),detailRow('Контрольный срок',new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Yekaterinburg'}).format(new Date(order.deadline))),
+    detailRow('Начать не позднее',time(order.latest_start)),detailRow('Назначено выполнить до',assignment?fullTime(assignment.stop.end):'Назначение ещё не получено'),
     detailRow('Узел доступа',order.access_node_id),detailRow('Допуск к высоте',order.requires_height?'Требуется':'Не требуется'));
+  const normative=node('details');normative.append(node('summary','','Нормативный срок по ТЗ'),node('p','',fullTime(order.deadline)+' · используется для оценки просрочки, не является назначенным временем визита'));box.append(normative);
   if(order.is_repeat)box.append(node('p','repeat-tag','↺ Повторное обращение · повышенный приоритет'));
   const equipment=node('div','equipment');for(const [kind,count]of Object.entries(order.required_equipment)){if(count)equipment.append(node('span','',`${kind} × ${count}`));}
   if(!equipment.childNodes.length)equipment.append(node('span','','АО не требуется'));box.append(equipment);
-  const assignment=assigned(order.order_id);
-  if(assignment)box.append(detailRow('Исполнитель',assignment.staff),detailRow('Визит',`${assignment.number} · ${time(assignment.stop.start)}–${time(assignment.stop.end)}`));
+  if(assignment)box.append(detailRow('Исполнитель',assignment.staff),detailRow('Назначенный визит',`${fullTime(assignment.stop.start)}–${time(assignment.stop.end)}`));
   const reason=state.view.unassigned.get(order.order_id);
   if(reason)box.append(node('div','unassigned-detail',`${reason.reason_text} ${actionLabels[reason.suggested_action]||''}`));
   const group=state.view.groups.get(order.order_id);if(group)box.append(node('div','unassigned-detail',`${group.group_id}: ${actionLabels[group.action]||group.action}`));

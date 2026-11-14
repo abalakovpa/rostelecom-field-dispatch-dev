@@ -81,3 +81,12 @@ class AfterShiftTest(unittest.TestCase):
         transfer=result['_future_transfers'][0];self.assertEqual(transfer['to_date'],'2026-10-27')
         visit=next(s for r in transfer['target_plan']['routes'] for s in r['stops'] if s.get('order_id')==order['order_id'])
         self.assertGreaterEqual(visit['start'],'2026-10-27T09:00:00+05:00');self.assertLessEqual(visit['end'],'2026-10-27T18:00:00+05:00')
+
+class SameDayPriorityTest(unittest.TestCase):
+    def test_free_time_today_is_used_before_future_dates(self):
+        reference,matrix,day=sample();day['orders']=day['orders'][:1]
+        request=dict(reference=reference,matrix=matrix,day=day,time_limit_sec=1)
+        result=calculate(request)
+        self.assertFalse(result['_future_transfers'])
+        visit=next(s for r in result['routes'] for s in r['stops'] if s['type']=='VISIT')
+        self.assertTrue(visit['end'].startswith(day['date']))
