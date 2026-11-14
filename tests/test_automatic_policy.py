@@ -38,3 +38,35 @@ class AutomaticPolicyTest(unittest.TestCase):
         reference,matrix,day=sample();day['orders']=day['orders'][:1]
         result=calculate(dict(reference=reference,matrix=matrix,day=day,time_limit_sec=1))
         self.assertFalse(any(s['type']=='RESTOCK' for r in result['routes'] for s in r['stops']))
+
+class FutureCalendarTest(unittest.TestCase):
+    def request(self,occupied=False):
+        from datetime import timedelta
+        reference,matrix,day=sample();day['orders']=day['orders'][:2]
+        for o in day['orders']:o['deadline']='2026-10-27T18:00:00+05:00'
+        previous=plan_openapi(reference,matrix,day)
+        event={'event_id':'NEXT-DAY','type':'STAFF_UNAVAILABLE','timestamp':at('10:20:00'),'staff_id':'ST-001','until':None,'reason':'ILLNESS'}
+        day['now']=event['timestamp'];calendar={}
+        if occupied:
+            target=deepcopy(day);target['date']='2026-10-27';target['now']='2026-10-27T00:00:00+05:00';target['orders']=target['orders'][:1]
+            order=target['orders'][0];order['order_id']='ORD-20261027-0100'
+            order['slot']={k:v.replace('2026-10-26','2026-10-27') for k,v in order['slot'].items()};order['latest_start']=order['latest_start'].replace('2026-10-26','2026-10-27')
+            calendar[target['date']]={'input':target,'plan':plan_openapi(reference,matrix,target),'events':[]}
+        return dict(reference=reference,matrix=matrix,day=day,previous_plan=previous,event=event,calendar=calendar,time_limit_sec=3)
+    def test_next_day_reservation_preserves_existing_appointments(self):
+        request=self.request(True);before=deepcopy(request)
+        result=calculate(request);self.assertEqual(request,before)
+        self.assertTrue(result['_future_transfers'])
+        transfer=result['_future_transfers'][0];self.assertEqual(transfer['to_date'],'2026-10-27')
+        old=request['calendar']['2026-10-27']['plan']
+        booked={(r['staff_id'],s['order_id'],s['start'],s['end']) for r in old['routes'] for s in r['stops'] if s['type']=='VISIT'}
+        actual={(r['staff_id'],s['order_id'],s['start'],s['end']) for r in transfer['target_plan']['routes'] for s in r['stops'] if s['type']=='VISIT'}
+        self.assertTrue(booked<=actual)
+        self.assertTrue(any(row[1]==transfer['order_id'] for row in actual))
+        self.assertFalse(any(u['order_id']==transfer['order_id'] for u in result['unassigned']))
+    def test_deadline_does_not_allow_silent_next_day_extension(self):
+        request=self.request()
+        for o in request['day']['orders']:o['deadline']=at('18:00:00')
+        result=calculate(request)
+        self.assertEqual(result['_future_transfers'],[])
+        self.assertTrue(result['unassigned'])

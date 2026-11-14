@@ -124,9 +124,9 @@ function render(){
   let summary=document.getElementById('automatic-policy-summary');
   if(!summary){summary=node('div','statusbar');summary.id='automatic-policy-summary';document.querySelector('.statusbar').after(summary);}
   const plan=state.day?.plan;
-  const changes=plan?.automatic_reschedules||[],incidents=plan?.incident_groups||[];
-  summary.textContent=`Автоматические переносы: ${changes.length}. Группы аварий с выездами: ${incidents.length}. `+
-    changes.slice(-3).map(c=>`${c.order_id}: ${time(c.old_slot.start)} → ${time(c.slot.start)}`).join('; ')+
+  const changes=plan?.automatic_reschedules||[],incidents=plan?.incident_groups||[],transfers=plan?.transferred_orders||[];
+  summary.textContent=`Автоматические переносы: ${changes.length}. На другие дни: ${transfers.length}. Группы аварий с выездами: ${incidents.length}. `+
+    transfers.map(c=>` → `).join('; ')+ ' '+changes.slice(-3).map(c=>`${c.order_id}: ${time(c.old_slot.start)} → ${time(c.slot.start)}`).join('; ')+
     (incidents.length?' · '+incidents.map(g=>`${g.group_id}: ${g.order_ids.length} заявок`).join('; '):'');
   if(!state.ref||!state.day)return;
   state.view=projectDay(state.day,state.ref.staff);
@@ -278,7 +278,8 @@ eventSend.onclick=async()=>{
   try{
     const response=await fetch(`/api/v1/days/${$('day').value}/events`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     const result=await response.json();if(!response.ok)throw new Error(result.error?.message||'Ошибка события.');
-    await loadDay();eventStatus.textContent=`${result.duplicate?'Повтор уже принятого события':'Событие принято'} · версия ${result.plan_version} · ${result.processing_ms} мс`;
+    await bootstrap();eventStatus.textContent=`${result.duplicate?'Повтор уже принятого события':'Событие принято'} · версия ${result.plan_version} · ${result.processing_ms} мс`;
   }catch(e){eventStatus.textContent=e.message;}finally{eventSend.disabled=!state.day?.plan;$('day').disabled=false;}
 };
+
 

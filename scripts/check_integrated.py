@@ -70,3 +70,32 @@ assert len(expanded['incident_groups'][0]['order_ids'])==4
 assert not expanded['pgp_groups']
 assert sum(s['type']=='VISIT' for r in expanded['routes'] for s in r['stops'])+len(expanded['unassigned'])==4
 print('INCIDENT EXPANSION PERSISTENCE PASSED')
+
+# Next-day transfer must reserve the destination calendar and survive duplicate delivery.
+import sys
+sys.path.insert(0,str(root))
+sys.path.insert(0,str(root/'tests'))
+sys.path.insert(0,str(root/'planner-service'))
+from test_automatic_policy import FutureCalendarTest
+request=FutureCalendarTest().request(True)
+call('PUT','/api/v1/reference',request['reference'])
+call('PUT','/api/v1/reference/travel-matrix',request['matrix'])
+target=request['calendar']['2026-10-27']['input']
+call('PUT','/api/v1/days/2026-10-27',target)
+booked=call('POST','/api/v1/days/2026-10-27/plan',{'time_limit_sec':5})
+source=deepcopy(request['day']);source['now']='2026-10-26T08:30:00+05:00'
+call('PUT',path,source);call('POST',path+'/plan',{'time_limit_sec':5})
+call('POST',path+'/events',request['event'])
+source_plan=call('GET',path+'/plan');assert source_plan['transferred_orders']
+transfer=source_plan['transferred_orders'][0];assert transfer['to_date']=='2026-10-27'
+future_ui=call('GET','/api/ui/days/2026-10-27')
+assert any(o['order_id']==transfer['order_id'] for o in future_ui['orders'])
+future_plan=call('GET','/api/v1/days/2026-10-27/plan')
+assert any(s.get('order_id')==transfer['order_id'] for r in future_plan['routes'] for s in r['stops'])
+old={(r['staff_id'],s['order_id'],s['start'],s['end']) for r in booked['routes'] for s in r['stops'] if s['type']=='VISIT'}
+new={(r['staff_id'],s['order_id'],s['start'],s['end']) for r in future_plan['routes'] for s in r['stops'] if s['type']=='VISIT'}
+assert old<=new
+assert call('POST',path+'/events',request['event'])['duplicate']
+assert call('GET','/api/v1/days/2026-10-27/plan')==future_plan
+print('NEXT-DAY CALENDAR PERSISTENCE PASSED')
+

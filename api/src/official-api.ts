@@ -1,4 +1,4 @@
-﻿import { Ajv } from 'ajv';
+import { Ajv } from 'ajv';
 import addFormats from 'ajv-formats';
 import type { FastifyInstance } from 'fastify';
 import { ApiError } from './errors.js';
@@ -111,7 +111,7 @@ export function registerOfficialApi(app: FastifyInstance, store: Store, planner:
   }));
   async function calculate(state:Document,day:any,event:any,timeout:number) {
     const started=performance.now();
-    const plan=await planner({reference:state.reference,matrix:state.matrix,day:structuredClone(day.input),previous_plan:structuredClone(day.plan),event},timeout);
+    const plan=await planner({reference:state.reference,matrix:state.matrix,day:structuredClone(day.input),previous_plan:structuredClone(day.plan),event,calendar:structuredClone(state.days)},timeout);
     for(const update of plan._order_updates ?? []) {
       const order=day.input.orders.find((o:any)=>o.order_id===update.order_id);
       if(!order)fail('INVALID_PLANNER_RESPONSE','Reschedule refers to an unknown order',502);
@@ -122,6 +122,35 @@ export function registerOfficialApi(app: FastifyInstance, store: Store, planner:
       if(Date.parse(candidate.slot.start)<Date.parse(day.input.now) || Date.parse(candidate.latest_start)>Date.parse(order.deadline))fail('INVALID_PLANNER_RESPONSE','Reschedule is outside allowed time',502);
       order.slot=update.slot;order.latest_start=update.latest_start;
     }
+    for(const transfer of plan._future_transfers ?? []) {
+      const source=day.input.orders.find((o:any)=>o.order_id===transfer.order_id);
+      const date=transfer.to_date;
+      if(!source || !/^\d{4}-\d{2}-\d{2}$/.test(date) || date<=day.input.date)fail('INVALID_PLANNER_RESPONSE','Invalid future transfer',502);
+      const target=state.days[date];
+      if(target?.events.length)fail('INVALID_PLANNER_RESPONSE','Cannot change a day already processing events',502);
+      const input=transfer.target_input,result=transfer.target_plan;
+      if(input.date!==date || !validator.getSchema('urn:dispatch:DayInput')?.(input) || !validator.getSchema('urn:dispatch:Plan')?.(result))fail('INVALID_PLANNER_RESPONSE','Invalid destination day',502);
+      for(const order of input.orders)validateOrder(order,state.reference,date,input.now);
+      const destination=input.orders.find((o:any)=>o.order_id===source.order_id);
+      if(!destination || Date.parse(destination.deadline)!==Date.parse(source.deadline))fail('INVALID_PLANNER_RESPONSE','Transfer changed deadline',502);
+      const expected=input.orders.map((o:any)=>o.order_id);
+      const accounted=[...result.routes.flatMap((r:any)=>r.stops.filter((s:any)=>s.type==='VISIT').map((s:any)=>s.order_id)),...result.unassigned.map((o:any)=>o.order_id),...result.cancelled.map((o:any)=>o.order_id),...result.pgp_groups.flatMap((g:any)=>g.order_ids)];
+      if(new Set(accounted).size!==accounted.length || accounted.length!==expected.length || expected.some((id:string)=>!accounted.includes(id)))fail('INVALID_PLANNER_RESPONSE','Destination accounting mismatch',502);
+      for(const route of result.routes) {
+        let stock={...state.reference.staff.find((w:any)=>w.staff_id===route.staff_id).equipment_start};
+        for(let i=0;i<route.stops.length;i++) {
+          const stop=route.stops[i],prior=route.stops[i-1],from=prior?state.matrix.points.indexOf(prior.location_id):-1,to=state.matrix.points.indexOf(stop.location_id);
+          stop.travel_sec=from<0?0:state.matrix.durations_sec[from][to];stop.distance_m=from<0?0:state.matrix.distances_m[from][to];
+          if(stop.type==='RESTOCK')stock={...state.reference.staff.find((w:any)=>w.staff_id===route.staff_id).equipment_capacity};
+          if(stop.type==='VISIT'){const o=input.orders.find((o:any)=>o.order_id===stop.order_id);for(const [kind,count] of Object.entries(o._remaining_equipment ?? o.required_equipment))stock[kind]=(stock[kind] ?? 0)-Number(count);}
+          stop.equipment_after={...stock};
+        }
+      }
+      result.based_on_event_id=event?.event_id ?? null;
+      state.days[date]={input,plan:result,events:target?.events ?? [],event_results:target?.event_results ?? {}};
+      day.input.orders=day.input.orders.filter((o:any)=>o.order_id!==source.order_id);
+    }
+    delete plan._future_transfers;
     delete plan._order_updates;
     plan.date=day.input.date; plan.as_of=day.input.now; plan.plan_version=event ? day.plan.plan_version+1 : 1;
     plan.based_on_event_id=event?.event_id ?? null; plan.computation_ms=Math.round(performance.now()-started);
@@ -184,6 +213,7 @@ export function registerOfficialApi(app: FastifyInstance, store: Store, planner:
     return result;
   }));
 }
+
 
 
 

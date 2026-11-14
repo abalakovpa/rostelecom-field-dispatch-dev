@@ -1,6 +1,6 @@
 ﻿import { ApiError } from './errors.js';
 export interface PlanningInput {
-  reference: any; matrix: any; day: any; previous_plan: any; event: any;
+  reference: any; matrix: any; day: any; previous_plan: any; event: any; calendar?: Record<string,any>;
 }
 export type Planner = (input: PlanningInput, timeoutMs: number) => Promise<any>;
 // Explicit integration boundary. No fabricated successful plan when the planner is unavailable.
@@ -18,4 +18,5 @@ export const httpPlanner: Planner = async (input, timeoutMs) => {
     throw new ApiError(503, 'PLANNER_UNAVAILABLE', 'Planner failed or timed out');
   }
 };
+
 
