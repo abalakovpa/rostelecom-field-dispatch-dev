@@ -1,5 +1,19 @@
 ﻿name: rostelecom-field-dispatch
 services:
+  request-panel:
+    profiles: [panel]
+    build:
+      context: .
+      dockerfile: request-panel/Dockerfile
+    restart: unless-stopped
+    environment:
+      API_URL: http://api:8080
+      PANEL_PASSWORD: ${PANEL_PASSWORD:-}
+    ports:
+      - "${PANEL_BIND:-0.0.0.0}:${PANEL_PORT:-8082}:8082"
+    depends_on:
+      api:
+        condition: service_healthy
   planner:
     build:
       context: .
@@ -60,6 +74,7 @@ services:
       retries: 6
 volumes:
   pgdata:
+
 
 
 
