@@ -99,3 +99,62 @@ assert call('POST',path+'/events',request['event'])['duplicate']
 assert call('GET','/api/v1/days/2026-10-27/plan')==future_plan
 print('NEXT-DAY CALENDAR PERSISTENCE PASSED')
 
+# A tick during the return leg must preserve a feasible ETA after transfer.
+return_day = json.loads(json.dumps(example['day']))
+return_day['date'] = '2026-10-28'
+def return_time(clock):
+    return f"{return_day['date']}T{clock}:00+05:00"
+
+return_day['now'] = return_time('11:30')
+order = return_day['orders'][0]
+order.update(
+    order_id='ORD-20261028-0001',
+    registered_at=return_time('11:00'),
+    slot={'start': return_time('19:29'), 'end': return_time('21:29')},
+    latest_start=return_time('19:39'),
+    deadline=return_time('21:00'),
+)
+return_day['orders'] = [order]
+reference = json.loads(json.dumps(example['reference']))
+reference['staff'][0]['shift'].update(
+    start='12:00', end='21:00', break_window={'from': '15:00', 'to': '17:00'},
+)
+matrix = json.loads(json.dumps(example['matrix']))
+home = reference['staff'][0]['service_center_id']
+origin = matrix['points'].index(order['building_id'])
+destination = matrix['points'].index(home)
+matrix['durations_sec'][origin][destination] = 45 * 60
+call('PUT', '/api/v1/reference', reference)
+call('PUT', '/api/v1/reference/travel-matrix', matrix)
+return_path = '/api/v1/days/' + return_day['date']
+call('PUT', return_path, return_day)
+initial = call('POST', return_path + '/plan', {'time_limit_sec': 10})
+route = initial['routes'][0]
+visit = next(stop for stop in route['stops'] if stop.get('order_id') == order['order_id'])
+assert visit['start'] == return_time('19:29') and visit['end'] == return_time('20:14')
+assert route['stops'][-1]['arrival'] == return_time('20:59')
+transfer = {
+    'type': 'ORDER_TRANSFERRED', 'event_id': 'RETURN-TRANSFER',
+    'timestamp': return_time('20:10'), 'actual_end': return_time('20:10'),
+    'staff_id': route['staff_id'], 'order_id': order['order_id'],
+    'transferred_to': 'TRUNK_CABLE',
+}
+assert call('POST', return_path + '/events', transfer)['plan_version'] == 2
+after_transfer = call('GET', return_path + '/plan')
+transferred_route = after_transfer['routes'][0]
+transferred_visit = next(stop for stop in transferred_route['stops'] if stop.get('order_id') == order['order_id'])
+assert transferred_route['staff_id'] == route['staff_id']
+assert all(transferred_visit[field] == visit[field] for field in ('order_id', 'location_id', 'arrival', 'start'))
+assert transferred_visit['end'] == transfer['actual_end']
+return_stop = transferred_route['stops'][-1]
+assert return_stop['type'] == 'DEPOT_END' and return_stop['location_id'] == home
+assert return_time('20:55') <= return_stop['arrival'] <= return_time('21:00')
+
+tick = {'type': 'TIME_TICK', 'event_id': 'RETURN-TICK', 'timestamp': return_time('20:30')}
+assert call('POST', return_path + '/events', tick)['plan_version'] == 3
+after_tick = call('GET', return_path + '/plan')
+assert after_tick['as_of'] == tick['timestamp']
+assert after_tick['routes'][0]['staff_id'] == transferred_route['staff_id']
+assert after_tick['routes'][0]['stops'] == transferred_route['stops'], after_tick['routes'][0]['stops']
+print('IN-FLIGHT RETURN AFTER ORDER_TRANSFERRED PASSED')
+
