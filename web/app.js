@@ -94,6 +94,8 @@ function staffCard(person){
   card.append(top,node('h3','',person.display_name||person.staff_id),node('div','card-work',`${person.technologies.join(' · ')}${person.height_permit?' · Допуск к высоте':''}`));
   const bottom=node('div','card-bottom');bottom.append(node('span','time-tag',`${shiftTime(state.day.date,person.shift_start)} — ${shiftTime(state.day.date,person.shift_end)}`),node('span','',person.service_center_id));card.append(bottom);
   const workload=state.view?.rows.find(r=>r.route.staff_id===person.staff_id);
+  const inventory=state.day?.inventory?.find(p=>p.staff_id===person.staff_id);
+  if(inventory)card.append(node('div','staff-workload',`Остаток: ONT ${inventory.current.ONT} · роутеры ${inventory.current.ROUTER} · STB ${inventory.current.STB}`));
   if(workload)card.append(node('div','staff-workload',`${workload.visits} визитов · работы ${Math.round(workload.workMin)} мин · дорога ${Math.round(workload.travelMin)} мин`));
   card.addEventListener('click',()=>{
     const center=state.ref.service_centers.find(c=>c.service_center_id===person.service_center_id);

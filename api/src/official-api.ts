@@ -5,6 +5,7 @@ import { ApiError } from './errors.js';
 import { definitions, schemaRef } from './openapi.js';
 import type { Store, Document } from './store.js';
 import type { Planner } from './planning.js';
+import {equipmentStart,validateInventoryOverrides} from './inventory.js';
 const fail = (code: string, message: string, status = 422): never => { throw new ApiError(status, code, message); };
 const unique = (items: any[], key: string) => {
   const ids = items.map(x => x[key]);
@@ -111,6 +112,7 @@ export function registerOfficialApi(app: FastifyInstance, store: Store, planner:
   app.put<{Params:{date:string}}>('/api/v1/days/:date', {schema:{params,body:schemaRef('DayInput'),response:response('LoadResult')}}, async request => store.transact(async state => {
     if (!state.reference) fail('REFERENCE_NOT_LOADED','Load reference first',409);
     const d:any=request.body;
+    validateInventoryOverrides(d,state.reference);
     if (d.date !== request.params.date) fail('DATE_MISMATCH','Body and path dates differ');
     unique(d.orders,'order_id');
     for (const o of d.orders) validateOrder(o,state.reference,d.date,d.now);
@@ -120,6 +122,7 @@ export function registerOfficialApi(app: FastifyInstance, store: Store, planner:
   }));
   async function calculate(state:Document,day:any,event:any,timeout:number) {
     const started=performance.now();
+    validateInventoryOverrides(day.input,state.reference);
     const plan=await planner({reference:state.reference,matrix:state.matrix,day:structuredClone(day.input),previous_plan:structuredClone(day.plan),event,calendar:structuredClone(state.days)},timeout);
     for(const update of plan._order_updates ?? []) {
       const order=day.input.orders.find((o:any)=>o.order_id===update.order_id);
@@ -146,7 +149,7 @@ export function registerOfficialApi(app: FastifyInstance, store: Store, planner:
       const accounted=[...result.routes.flatMap((r:any)=>r.stops.filter((s:any)=>s.type==='VISIT').map((s:any)=>s.order_id)),...result.unassigned.map((o:any)=>o.order_id),...result.cancelled.map((o:any)=>o.order_id),...result.pgp_groups.flatMap((g:any)=>g.order_ids)];
       if(new Set(accounted).size!==accounted.length || accounted.length!==expected.length || expected.some((id:string)=>!accounted.includes(id)))fail('INVALID_PLANNER_RESPONSE','Destination accounting mismatch',502);
       for(const route of result.routes) {
-        let stock={...state.reference.staff.find((w:any)=>w.staff_id===route.staff_id).equipment_start};
+        let stock=equipmentStart(input,state.reference.staff.find((w:any)=>w.staff_id===route.staff_id));
         for(let i=0;i<route.stops.length;i++) {
           const stop=route.stops[i],prior=route.stops[i-1],from=prior?state.matrix.points.indexOf(prior.location_id):-1,to=state.matrix.points.indexOf(stop.location_id);
           stop.travel_sec=from<0?0:state.matrix.durations_sec[from][to];stop.distance_m=from<0?0:state.matrix.distances_m[from][to];
@@ -166,7 +169,7 @@ export function registerOfficialApi(app: FastifyInstance, store: Store, planner:
     plan.based_on_event_id=event?.event_id ?? null; plan.computation_ms=Math.round(performance.now()-started);
     for (const route of plan.routes ?? []) {
       const worker=state.reference.staff.find((w:any)=>w.staff_id===route.staff_id);
-      const stock={...worker?.equipment_start};
+      const stock=equipmentStart(day.input,worker);
       for(const record of day.input._interrupted_visits ?? [])if(record.staff_id===route.staff_id)for(const [kind,count] of Object.entries(record.equipment_consumed))stock[kind]=(stock[kind] ?? 0)-Number(count);
       for (let i=0;i<route.stops.length;i++) {
         const stop=route.stops[i],prior=route.stops[i-1];

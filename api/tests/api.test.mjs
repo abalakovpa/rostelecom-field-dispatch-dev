@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { parse } from 'yaml';
 import { buildApp } from '../dist/app.js';
 import { planAction } from '../../web/plan-action.js';
+import {inventoryFor,validateInventoryOverrides} from '../dist/inventory.js';
 const spec=parse(readFileSync(new URL('../spec/api_spec.yaml',import.meta.url),'utf8'));
 const example=name=>structuredClone(spec.components.examples[name].value);
 class MemoryStore {
@@ -131,4 +132,39 @@ test('debug identifiers include historical orders and resolve retries without re
   const retry=await send('POST',path+'/events',event);assert.equal(retry.json().duplicate,true);
   const collision=await send('POST',path+'/events',{...event,event_id:'OTHER'});assert.equal(collision.json().error.code,'DUPLICATE_ORDER');
  }finally{await app.close();}
+});
+
+test('inventory overrides are day-specific, capacity-checked and locked after events',async()=>{
+ const {app,store,send}=await fixture();
+ try{
+  const original=structuredClone(store.state.reference.staff[0]);
+  const date='2026-11-02',url=`/api/ui/days/${date}/inventory`;
+  const start={ONT:0,ROUTER:1,STB:0};
+  const response=await send('POST',url,{staff_id:original.staff_id,equipment_start:start});assert.equal(response.statusCode,200,response.body);
+  assert.deepEqual((await send('GET',url)).json().staff[0].current,start);
+  assert.deepEqual(store.state.reference.staff[0],original);
+  const before=structuredClone(store.state);
+  const invalid=await send('POST',url,{staff_id:original.staff_id,equipment_start:{...start,ROUTER:original.equipment_capacity.ROUTER+1}});
+  assert.equal(invalid.statusCode,422);assert.deepEqual(store.state,before);
+  assert.equal((await send('POST',`/api/v1/days/${date}/plan`,{})).statusCode,200);
+  assert.equal((await send('POST',`/api/v1/days/${date}/events`,{event_id:'clock',type:'TIME_TICK',timestamp:date+'T09:00:00+05:00'})).statusCode,200);
+  assert.equal((await send('POST',url,{staff_id:original.staff_id,equipment_start:start})).statusCode,409);
+ }finally{await app.close();}
+});
+
+test('inventory display consumes at visit start and replenishes only at depot completion',()=>{
+ const start={ONT:0,ROUTER:1,STB:0},empty={...start,ROUTER:0},full={...start,ROUTER:3};
+ const worker={staff_id:'S',equipment_start:start,equipment_capacity:full};
+ const at=t=>`2026-11-02T${t}:00+05:00`;
+ const plan={routes:[{staff_id:'S',stops:[{type:'VISIT',start:at('09:00'),end:at('10:00'),equipment_after:empty},{type:'RESTOCK',start:at('10:30'),end:at('10:45'),equipment_after:full}]}]};
+ assert.deepEqual(inventoryFor({now:at('08:59')},plan,worker).current,start);
+ assert.deepEqual(inventoryFor({now:at('09:00')},plan,worker).current,empty);
+ assert.deepEqual(inventoryFor({now:at('10:35')},plan,worker).current,empty);
+ assert.deepEqual(inventoryFor({now:at('10:45')},plan,worker).current,full);
+});
+
+test('malformed internal stock overrides cannot bypass capacity checks',()=>{
+ const reference={staff:[{staff_id:'S',equipment_capacity:{ONT:1,ROUTER:2,STB:0}}]};
+ for(const value of [null,[],{UNKNOWN:{ONT:0,ROUTER:0,STB:0}},{S:{ONT:0,ROUTER:3,STB:0}},{S:{ONT:0,ROUTER:-1,STB:0}},{S:{ONT:0,ROUTER:1.5,STB:0}},{S:{ONT:0,ROUTER:1}}])assert.throws(()=>validateInventoryOverrides({_equipment_start_by_staff:value},reference));
+ validateInventoryOverrides({_equipment_start_by_staff:{S:{ONT:1,ROUTER:2,STB:0}}},reference);
 });

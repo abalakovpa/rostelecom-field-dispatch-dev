@@ -3,7 +3,9 @@ import { readFile } from 'node:fs/promises';
 import { resolve, sep, extname } from 'node:path';
 import type { Store } from './store.js';
 import { ApiError } from './errors.js';
+import { registerInventory,inventoryFor } from './inventory.js';
 export function registerUi(app:FastifyInstance,store:Store) {
+  registerInventory(app,store);
   const root=resolve(process.env.WEB_ROOT ?? '../web');
   async function asset(file:string,reply:any) {
     const path=resolve(root,file);
@@ -44,7 +46,7 @@ export function registerUi(app:FastifyInstance,store:Store) {
     reply.header('Cache-Control','no-store');
     return store.transact(async state=>{
       const d=state.days[request.params.date];if(!d)throw new ApiError(404,'DAY_NOT_LOADED','Day not loaded');
-      return {data_source:'postgres',date:d.input.date,model_now:d.input.now,orders:d.input.orders.map((o:any)=>({...o,slot_start:o.slot.start,slot_end:o.slot.end})),plan:d.plan};
+      return {data_source:'postgres',date:d.input.date,model_now:d.input.now,orders:d.input.orders.map((o:any)=>({...o,slot_start:o.slot.start,slot_end:o.slot.end})),plan:d.plan,inventory:state.reference.staff.map((w:any)=>inventoryFor(d.input,d.plan,w))};
     });
   });
   app.get<{Params:{date:string;staff:string}}>('/api/ui/days/:date/routes/:staff/geometry',async request=>{

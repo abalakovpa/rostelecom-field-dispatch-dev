@@ -6,9 +6,9 @@
  if(work.code==='SURVEY_PRIVATE')return building.building_type==='PRIVATE';
  return true;
 }
-export function employeeFitsOrder(person,building,work){
+export function employeeFitsOrder(person,building,work,demand){
  if(!workFitsBuilding(building,work))return false;
  const height=work.code==='INST_PRIVATE_VLS'||(building.building_type==='PRIVATE'&&building.overhead_line);
- const equipment={ONT:building.technology==='PON'?1:0,ROUTER:1,STB:0};
+ const equipment=demand??{ONT:building.technology==='PON'?1:0,ROUTER:1,STB:0};
  return person.profiles.some(p=>work.profiles.includes(p))&&person.technologies.includes(building.technology)&&(!height||person.height_permit)&&Object.entries(equipment).every(([kind,count])=>(person.equipment_capacity?.[kind]??0)>=count);
 }

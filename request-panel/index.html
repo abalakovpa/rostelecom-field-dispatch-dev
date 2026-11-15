@@ -5,6 +5,7 @@
 <p><a href="/map" target="_blank">Открыть карту и расписание</a></p><pre id="result">Загрузка адресов…</pre>
 <script type="module">
 import {workFitsBuilding,employeeFitsOrder} from "/static/order-options.js";
+import {requiredEquipment,setEquipmentDefaults} from "/inventory.js";
 document.getElementById('seed').onclick=async()=>{if(!confirm('Загрузить справочники? Разрешено только для пустой БД.'))return;const r=await fetch('/seed',{method:'POST',headers:{'X-Requested-With':'request-panel'}});document.getElementById('result').textContent=JSON.stringify(await r.json(),null,2);if(r.ok)location.reload()};
 const $=id=>document.getElementById(id);
 async function refreshStats(){try{const r=await fetch('/stats?date='+encodeURIComponent($('date').value));const d=await r.json();if(!r.ok)throw new Error('Не удалось получить статистику');$('daily-stats').textContent=`На дату ${d.date}: всего ${d.total} · назначено ${d.assigned} · не назначено ${d.unassigned} · ожидают расчёта ${d.pending} · перенесено на другие дни ${d.transferred} · активные риски ${d.risks}`;}catch(e){$('daily-stats').textContent=e.message}}
@@ -12,7 +13,7 @@ $('date').addEventListener('change',refreshStats);
 let catalog={buildings:[],works:[],staff:[]};
 function updateEmployees(){
  const building=catalog.buildings.find(b=>b.building_id===$('address').value),work=catalog.works.find(w=>w.code===$('work').value);
- const old=$('staff').value,eligible=catalog.staff.filter(p=>employeeFitsOrder(p,building,work));
+ const old=$('staff').value,eligible=catalog.staff.filter(p=>employeeFitsOrder(p,building,work,requiredEquipment()));
  $('staff').replaceChildren(new Option('Автоматический выбор',''),...eligible.map(p=>new Option(`${p.staff_id} · ${p.display_name||''} · ${p.profiles.map(v=>v==='INSTALL'?'Инсталляция':'3ЛТП').join(', ')} · ${p.technologies.join(', ')}${p.height_permit?' · высота':''}`,p.staff_id)));
  if(eligible.some(p=>p.staff_id===old))$('staff').value=old;
  $('compatibility-hint').textContent=eligible.length?`Подходящих сотрудников: ${eligible.length}.`:'Нет сотрудника с нужным профилем, технологией, высотным допуском и вместимостью оборудования.';
@@ -20,12 +21,14 @@ function updateEmployees(){
 }
 function updateWorks(){
  const building=catalog.buildings.find(b=>b.building_id===$('address').value),old=$('work').value;
+ setEquipmentDefaults(building);
  const available=catalog.works.filter(w=>workFitsBuilding(building,w));
  $('work').replaceChildren(...available.map(w=>new Option(w.name,w.code)));
  if(available.some(w=>w.code===old))$('work').value=old;
  updateEmployees();
 }
 $('address').addEventListener('change',updateWorks);$('work').addEventListener('change',updateEmployees);
+document.addEventListener('equipment-change',updateEmployees);
 fetch('/catalog').then(r=>{if(!r.ok)throw new Error('Не удалось загрузить справочники');return r.json()}).then(d=>{catalog=d;for(const b of d.buildings)$('address').add(new Option(`${b.address} · ${b.technology} · ${b.building_type==='PRIVATE'?'частный дом':'МКД'}`,b.building_id));updateWorks();refreshStats();$('result').textContent='Выберите адрес, дату и время.'}).catch(e=>{$('result').textContent=e.message});
-document.querySelector('form').onsubmit=async e=>{e.preventDefault();const button=e.target.querySelector('button');button.disabled=true;$('result').textContent='Подбирается маршрут…';const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),60000);try{const r=await fetch('/create',{signal:controller.signal,method:'POST',headers:{'Content-Type':'application/json','X-Requested-With':'request-panel'},body:JSON.stringify({staff_id:$('staff').value,building_id:$('address').value,work_type_code:$('work').value,date:$('date').value,time:$('time').value})});const d=await r.json();if(!r.ok)throw new Error(d.error?.message||d.error||'Не удалось создать заявку');$('result').textContent=d.assignment?`Заявка ${d.order_id}\nНазначено: ${d.assignment.date}\nМастер: ${d.assignment.staff_id}\nНачало: ${d.assignment.start}\nОкончание: ${d.assignment.end}`:JSON.stringify(d,null,2)}catch(error){$('result').textContent=error.name==='AbortError'?'Ответ задерживается. Проверьте карту перед повторной отправкой: заявка могла сохраниться.':error.message}finally{clearTimeout(timer);updateEmployees();refreshStats()}};
+document.querySelector('form').onsubmit=async e=>{e.preventDefault();const button=e.target.querySelector('button');button.disabled=true;$('result').textContent='Подбирается маршрут…';const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),60000);try{const r=await fetch('/create',{signal:controller.signal,method:'POST',headers:{'Content-Type':'application/json','X-Requested-With':'request-panel'},body:JSON.stringify({required_equipment:requiredEquipment(),staff_id:$('staff').value,building_id:$('address').value,work_type_code:$('work').value,date:$('date').value,time:$('time').value})});const d=await r.json();if(!r.ok)throw new Error(d.error?.message||d.error||'Не удалось создать заявку');$('result').textContent=d.assignment?`Заявка ${d.order_id}\nНазначено: ${d.assignment.date}\nМастер: ${d.assignment.staff_id}\nНачало: ${d.assignment.start}\nОкончание: ${d.assignment.end}`:JSON.stringify(d,null,2)}catch(error){$('result').textContent=error.name==='AbortError'?'Ответ задерживается. Проверьте карту перед повторной отправкой: заявка могла сохраниться.':error.message}finally{clearTimeout(timer);updateEmployees();refreshStats()}};
 </script><script type="module" src="/debug.js"></script></html>

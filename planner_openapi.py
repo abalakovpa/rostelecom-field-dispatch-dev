@@ -78,6 +78,7 @@ class DayPlanner:
         self.previous = {route["staff_id"]: route for route in (previous or {}).get("routes", [])}
         self.event = event or {}
         self.interrupted = day.get("_interrupted_visits", [])
+        self.equipment_start = day.get("_equipment_start_by_staff", {})
 
     def travel(self, origin, destination):
         return self.durations[self.points[origin]][self.points[destination]]
@@ -96,7 +97,7 @@ class WorkerRoute:
         self.break_last = _local_time(day.date, shift["break_window"]["to"])
         self.break_duration = shift["break_duration_min"] * 60
         self.capacity = _equipment(staff["equipment_capacity"])
-        self.stock = _equipment(staff["equipment_start"])
+        self.stock = _equipment(day.equipment_start.get(self.id, staff["equipment_start"]))
         # Equipment already installed remains at the interrupted site.
         # Carry its expenditure with the original worker, never charge a replacement twice.
         for record in day.interrupted:
@@ -184,7 +185,12 @@ class WorkerRoute:
 
         candidates = [(prefix, self.stop(origin, "VISIT", location, earliest, duration, order_id), available)
                       for prefix, origin, available in options]
-        prefix, visit, available = min(candidates, key=lambda item: (item[1].start, len(item[0])))
+        def cost(item):
+            prefix, visit, _ = item
+            stops = (previous, *prefix, visit)
+            drive = sum(day.travel(a.location, b.location) for a, b in zip(stops, stops[1:]))
+            return visit.start, drive + sum(s.end-s.start for s in prefix), len(prefix)
+        prefix, visit, available = min(candidates, key=cost)
         if not forecast and visit.start > latest:
             return (), stock, "NO_EQUIPMENT" if prefix else "SLOT_UNREACHABLE"
         if not forecast and visit.end > self.shift_end:
